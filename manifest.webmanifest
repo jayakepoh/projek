@@ -1,24 +1,25 @@
 {
-  "name": "Ping Pong - Main Tenis Meja",
-  "short_name": "Ping Pong",
-  "description": "Game tenis meja 3D melawan komputer.",
+  "id": "/",
+  "name": "Teman Ngopi — Ruang Sapa",
+  "short_name": "Teman Ngopi",
+  "description": "Ruang sapa untuk teman-teman yang suka ngopi.",
   "lang": "id",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#112a25",
-  "theme_color": "#112a25",
+  "background_color": "#f2f7f3",
+  "theme_color": "#237b59",
   "icons": [
     {
-      "src": "./icon.svg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
