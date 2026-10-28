@@ -18,7 +18,7 @@ Server memperbarui papan setiap lima detik. Jangan membuka server ini langsung k
 
 Untuk pemasangan dari Chrome dan agar teman bisa ikut menyapa dari perangkat lain, deploy aplikasi di alamat HTTPS publik. Buka alamat itu di Chrome Android, lalu pilih **Pasang aplikasi** jika tombolnya tersedia, atau buka menu Chrome dan pilih **Tambahkan ke layar utama**. Alamat `localhost` hanya berlaku di komputer yang menjalankan server; hosting publik juga harus memakai penyimpanan persisten agar database sapaan tidak hilang saat server dimulai ulang.
 
-Service worker menyimpan tampilan aplikasi untuk dibuka kembali saat offline. Mengirim dan melihat sapaan tetap memerlukan koneksi ke backend.
+Service worker menyimpan tampilan aplikasi untuk dibuka kembali saat offline. Mengirim dan melihat sapaan tetap memerlukan koneksi ke backend. Aplikasi memeriksa versi file saat dibuka, saat kembali ke tab, dan setiap satu menit; tombol **Perbarui** muncul saat ada perubahan.
 
 Ikon PWA dapat dibuat ulang tanpa paket tambahan:
 

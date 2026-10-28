@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import sqlite3
 from datetime import datetime, timezone
@@ -18,6 +19,7 @@ STATIC_FILES = {
     "/icon-192.png": ("icon-192.png", "image/png"),
     "/icon-512.png": ("icon-512.png", "image/png"),
 }
+VERSION_FILES = ("index.html", "manifest.webmanifest", "sw.js", "icon-192.png", "icon-512.png")
 SEED_GREETINGS = (
     ("Nadia", "Halo semuanya! Lagi cari rekomendasi kopi susu yang enak di sekitar Bandung ☕"),
     ("Raka", "Selamat sore! Semoga kopinya pas dan harinya juga ikut membaik."),
@@ -61,6 +63,13 @@ def greeting_to_dict(row):
     }
 
 
+def get_app_version():
+    digest = hashlib.sha256()
+    for filename in VERSION_FILES:
+        digest.update((ROOT / filename).read_bytes())
+    return digest.hexdigest()
+
+
 class GreetingHandler(BaseHTTPRequestHandler):
     server_version = "TemanNgopi/1.0"
 
@@ -88,6 +97,9 @@ class GreetingHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
+        if path == "/api/version":
+            return self.send_json(200, {"version": get_app_version()})
+
         if path == "/api/greetings":
             with connect_database() as connection:
                 rows = connection.execute(

@@ -102,6 +102,8 @@
     .install-button:hover { border-color: var(--green); background: #f7fbf8; }
     .install-button svg { width: 15px; height: 15px; }
     .install-button[hidden] { display: none; }
+    .update-button { border-color: #efc1ae; color: #a64c2e; }
+    .update-button:hover { border-color: var(--orange); background: #fff8f4; }
 
     .online-dot {
       width: 8px;
@@ -458,6 +460,10 @@
         <span>teman ngopi</span>
       </a>
       <div class="topbar-right">
+        <button class="install-button update-button" id="update-button" type="button" aria-label="Perbarui Teman Ngopi" title="Pembaruan tersedia" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2"/></svg>
+          <span>Perbarui</span>
+        </button>
         <button class="install-button" id="install-button" type="button" aria-label="Pasang Teman Ngopi" title="Pasang Teman Ngopi" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5"/><path d="M5 17v3h14v-3"/></svg>
           <span>Pasang aplikasi</span>
@@ -511,8 +517,12 @@
     const connectionStatus = document.querySelector("#connection-status");
     const connectionDot = document.querySelector("#connection-dot");
     const installButton = document.querySelector("#install-button");
+    const updateButton = document.querySelector("#update-button");
     const submitButton = form.querySelector(".submit-button");
     let installPrompt;
+    let serviceWorkerRegistration;
+    let isReloadingForUpdate = false;
+    let appVersion;
     let lastGreetings = "";
     const colors = [
       ["#e5e9f4", "#4e5e8d"],
@@ -525,6 +535,12 @@
       connectionStatus.textContent = isConnected ? "Meja sapa terbuka" : "Menyambung ulang...";
       connectionDot.style.background = isConnected ? "#54ae79" : "#e9754e";
       connectionDot.style.boxShadow = isConnected ? "0 0 0 4px #dcefe2" : "0 0 0 4px #f7e2d9";
+    }
+
+    function reloadForUpdate() {
+      if (isReloadingForUpdate) return;
+      isReloadingForUpdate = true;
+      window.location.reload();
     }
 
     function formatTime(value) {
@@ -591,6 +607,21 @@
       }
     }
 
+    async function checkAppVersion() {
+      try {
+        const response = await fetch("/api/version", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (appVersion === undefined) {
+          appVersion = payload.version;
+          return;
+        }
+        if (payload.version !== appVersion) updateButton.hidden = false;
+      } catch {
+        return;
+      }
+    }
+
     greetingList.addEventListener("click", async (event) => {
       const button = event.target.closest(".wave");
       if (!button || button.disabled) return;
@@ -652,12 +683,51 @@
       installPrompt = null;
     });
 
+    updateButton.addEventListener("click", async () => {
+      updateButton.disabled = true;
+      const waitingWorker = serviceWorkerRegistration?.waiting;
+      if (waitingWorker) {
+        waitingWorker.postMessage({ type: "ACTIVATE_UPDATE" });
+        window.setTimeout(reloadForUpdate, 1500);
+        return;
+      }
+      reloadForUpdate();
+    });
+
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      let hadController = Boolean(navigator.serviceWorker.controller);
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!hadController) {
+          hadController = true;
+          return;
+        }
+        reloadForUpdate();
+      });
+
+      navigator.serviceWorker.register("/sw.js").then((registration) => {
+        serviceWorkerRegistration = registration;
+
+        function showUpdateIfReady() {
+          updateButton.hidden = !(registration.waiting && navigator.serviceWorker.controller);
+        }
+
+        registration.addEventListener("updatefound", () => {
+          const installing = registration.installing;
+          if (!installing) return;
+          installing.addEventListener("statechange", showUpdateIfReady);
+        });
+
+        showUpdateIfReady();
+        window.addEventListener("focus", () => registration.update().catch(() => {}));
+        window.setInterval(() => registration.update().catch(() => {}), 60_000);
+      }).catch(() => {});
     }
 
     refreshGreetings();
     window.setInterval(refreshGreetings, 5000);
+    checkAppVersion();
+    window.setInterval(checkAppVersion, 60_000);
+    window.addEventListener("focus", checkAppVersion);
   </script>
 </body>
 </html>
