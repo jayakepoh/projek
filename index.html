@@ -40,6 +40,12 @@
     .score-side:last-child { justify-content: end; }
     .score { min-width: 32px; color: var(--lime); font-family: Georgia, "Times New Roman", serif; font-size: 32px; line-height: 1; text-align: center; }
     .versus { color: var(--muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+    .difficulty-bar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; min-height: 48px; padding: 7px 12px; background: var(--panel); border: 1px solid rgb(234 245 233 / 10%); border-bottom: 0; }
+    .difficulty-label { color: var(--muted); font-size: 11px; }
+    .difficulty-options { display: flex; gap: 3px; padding: 3px; border: 1px solid rgb(234 245 233 / 24%); border-radius: 4px; }
+    .difficulty-button { min-height: 30px; padding: 0 12px; color: var(--muted); background: transparent; font-size: 11px; }
+    .difficulty-button:hover { background: rgb(234 245 233 / 10%); transform: none; }
+    .difficulty-button[aria-pressed="true"] { color: #18251c; background: var(--lime); }
     .table-wrap { position: relative; overflow: hidden; background: #173a30; box-shadow: 0 28px 70px rgb(0 0 0 / 32%); }
     #game { width: 100%; aspect-ratio: 16 / 9; touch-action: none; cursor: crosshair; }
     #game canvas { display: block; width: 100%; height: 100%; }
@@ -71,6 +77,7 @@
       .score-side { gap: 6px; font-size: 9px; letter-spacing: .4px; }
       .score { min-width: 26px; font-size: 27px; }
       .versus { font-size: 8px; letter-spacing: .4px; }
+      .difficulty-bar { justify-content: center; }
       .controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px; }
       .hint { max-width: 190px; font-size: 10px; }
       .touch-controls { display: flex; grid-column: 1 / -1; grid-row: 2; justify-self: center; }
@@ -95,6 +102,13 @@
       <div class="best-score">Rekor terbaik<strong id="bestScore">0</strong></div>
     </header>
     <section aria-label="Permainan tenis meja">
+      <div class="difficulty-bar">
+        <span class="difficulty-label">Mode</span>
+        <div class="difficulty-options" role="group" aria-label="Pilih tingkat kesulitan">
+          <button class="difficulty-button" type="button" data-difficulty="normal" aria-pressed="true">Normal</button>
+          <button class="difficulty-button" type="button" data-difficulty="challenge" aria-pressed="false">Tantangan</button>
+        </div>
+      </div>
       <div class="scorebar" aria-live="polite">
         <div class="score-side"><span class="score" id="playerScore">0</span><span>Kamu</span></div>
         <span class="versus">VS · komputer</span>
@@ -134,6 +148,7 @@
       const startButton = document.querySelector("#startButton");
       const installButton = document.querySelector("#installButton");
       const touchControls = document.querySelectorAll(".touch-control");
+      const difficultyButtons = document.querySelectorAll(".difficulty-button");
       const pauseButton = document.querySelector("#pauseButton");
       const playerScoreLabel = document.querySelector("#playerScore");
       const computerScoreLabel = document.querySelector("#computerScore");
@@ -154,6 +169,7 @@
       let animationFrame = 0;
       let installPrompt = null;
       let touchDirection = 0;
+      let difficulty = "normal";
       const keys = new Set();
       let bestScore = Number(localStorage.getItem("pingpong-best") || 0);
       bestScoreLabel.textContent = bestScore;
@@ -306,7 +322,9 @@
       }
 
       function serve(direction = Math.random() < 0.5 ? -1 : 1) {
-        ball = { x: width / 2, y: height / 2, vx: direction * 5, vy: (Math.random() * 4 - 2) || 1 };
+        const ballSpeed = difficulty === "challenge" ? 5.5 : 5;
+        const verticalSpeed = difficulty === "challenge" ? 2.2 : 2;
+        ball = { x: width / 2, y: height / 2, vx: direction * ballSpeed, vy: (Math.random() * verticalSpeed * 2 - verticalSpeed) || 1 };
         waitingForServe = true;
         serveTimer = 0.65;
         syncObjects();
@@ -361,7 +379,7 @@
         if (keys.has("ArrowDown") || keys.has("s")) movePlayer(paddle.speed * frameScale);
         if (touchDirection) movePlayer(touchDirection * paddle.speed * frameScale);
         const computerTarget = ball.y;
-        const computerSpeed = 4.1 * frameScale;
+        const computerSpeed = (difficulty === "challenge" ? 4.4 : 4.1) * frameScale;
         if (computerY < computerTarget - 10) computerY = Math.min(computerTarget - 10, computerY + computerSpeed);
         if (computerY > computerTarget + 10) computerY = Math.max(computerTarget + 10, computerY - computerSpeed);
         if (waitingForServe) {
@@ -375,13 +393,13 @@
         const playerX = paddle.margin + paddle.width;
         if (ball.vx < 0 && ball.x - 10 <= playerX && ball.x > paddle.margin && Math.abs(ball.y - playerY) < paddle.height / 2 + 10) {
           ball.x = playerX + 10;
-          ball.vx = Math.min(Math.abs(ball.vx) * 1.06, 10) + 0.2;
+          ball.vx = Math.min(Math.abs(ball.vx) * 1.06, difficulty === "challenge" ? 10.8 : 10) + 0.2;
           ball.vy += (ball.y - playerY) * 0.075;
         }
         const computerX = width - paddle.margin - paddle.width;
         if (ball.vx > 0 && ball.x + 10 >= computerX && ball.x < computerX + paddle.width && Math.abs(ball.y - computerY) < paddle.height / 2 + 10) {
           ball.x = computerX - 10;
-          ball.vx = -(Math.min(Math.abs(ball.vx) * 1.04, 9) + 0.15);
+          ball.vx = -(Math.min(Math.abs(ball.vx) * 1.04, difficulty === "challenge" ? 9.8 : 9) + 0.15);
           ball.vy += (ball.y - computerY) * 0.055;
         }
         if (ball.x < 0) finishPoint(false);
@@ -423,6 +441,14 @@
       });
       window.addEventListener("resize", resizeRenderer);
       new ResizeObserver(resizeRenderer).observe(arena);
+      difficultyButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          difficulty = button.dataset.difficulty;
+          difficultyButtons.forEach((option) => {
+            option.setAttribute("aria-pressed", String(option === button));
+          });
+        });
+      });
       window.addEventListener("keydown", (event) => {
         const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
         if (["ArrowUp", "ArrowDown", "w", "s", " "].includes(key)) event.preventDefault();
