@@ -322,6 +322,43 @@
 
     .wave:hover, .wave.is-waved { color: var(--orange); transform: translateY(-1px); }
 
+    .reply-thread { margin-top: 12px; }
+
+    .reply-thread summary {
+      width: fit-content;
+      color: var(--green-dark);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+      list-style-position: inside;
+    }
+
+    .reply-list { display: grid; gap: 10px; margin: 12px 0; padding-left: 12px; border-left: 2px solid #d5e4d9; }
+
+    .reply-item { min-width: 0; }
+    .reply-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+    .reply-meta strong { font-size: 11px; }
+    .reply-meta time { color: #91a097; font-size: 10px; }
+    .reply-text { margin: 0; color: #52685e; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+
+    .reply-form { display: grid; gap: 8px; margin-top: 12px; }
+    .reply-form input, .reply-form textarea {
+      width: 100%;
+      border: 1px solid #cfddd2;
+      border-radius: 3px;
+      outline: none;
+      background: white;
+      color: var(--ink);
+      font: inherit;
+      font-size: 11px;
+    }
+    .reply-form input { height: 36px; padding: 0 10px; }
+    .reply-form textarea { min-height: 58px; padding: 9px 10px; resize: vertical; }
+    .reply-form input:focus, .reply-form textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgb(35 123 89 / 12%); }
+    .reply-submit { justify-self: start; min-height: 34px; padding: 0 11px; border: 0; border-radius: 3px; background: var(--green); color: white; cursor: pointer; font-size: 10px; font-weight: 800; }
+    .reply-submit:hover { background: var(--green-dark); }
+    .reply-submit:disabled { cursor: wait; opacity: .6; }
+
     .compose {
       position: sticky;
       top: 24px;
@@ -524,6 +561,7 @@
     let isReloadingForUpdate = false;
     let appVersion;
     let lastGreetings = "";
+    const expandedReplyThreads = new Set();
     const colors = [
       ["#e5e9f4", "#4e5e8d"],
       ["#f5e5d6", "#9b5b2b"],
@@ -575,6 +613,83 @@
       text.textContent = greeting.message;
       meta.append(author, timestamp);
       content.append(meta, text);
+
+      const thread = document.createElement("details");
+      thread.className = "reply-thread";
+      thread.open = expandedReplyThreads.has(greeting.id);
+      thread.addEventListener("toggle", () => {
+        if (thread.open) expandedReplyThreads.add(greeting.id);
+        else expandedReplyThreads.delete(greeting.id);
+      });
+      const summary = document.createElement("summary");
+      summary.textContent = greeting.replies.length
+        ? `Balas · ${greeting.replies.length}`
+        : "Balas sapaan ini";
+      const replyList = document.createElement("div");
+      replyList.className = "reply-list";
+      for (const reply of greeting.replies) {
+        const replyItem = document.createElement("div");
+        replyItem.className = "reply-item";
+        const replyMeta = document.createElement("div");
+        replyMeta.className = "reply-meta";
+        const replyAuthor = document.createElement("strong");
+        replyAuthor.textContent = reply.name;
+        const replyTimestamp = document.createElement("time");
+        replyTimestamp.dateTime = reply.created_at;
+        replyTimestamp.textContent = formatTime(reply.created_at);
+        const replyText = document.createElement("p");
+        replyText.className = "reply-text";
+        replyText.textContent = reply.message;
+        replyMeta.append(replyAuthor, replyTimestamp);
+        replyItem.append(replyMeta, replyText);
+        replyList.append(replyItem);
+      }
+
+      const replyForm = document.createElement("form");
+      replyForm.className = "reply-form";
+      const replyName = document.createElement("input");
+      replyName.name = "name";
+      replyName.type = "text";
+      replyName.maxLength = 32;
+      replyName.placeholder = "Namamu";
+      replyName.autocomplete = "name";
+      replyName.required = true;
+      const replyMessage = document.createElement("textarea");
+      replyMessage.name = "message";
+      replyMessage.maxLength = 180;
+      replyMessage.placeholder = "Tulis balasan...";
+      replyMessage.required = true;
+      const replySubmit = document.createElement("button");
+      replySubmit.className = "reply-submit";
+      replySubmit.type = "submit";
+      replySubmit.textContent = "Kirim balasan";
+      replyForm.append(replyName, replyMessage, replySubmit);
+      replyForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const name = replyName.value.trim();
+        const message = replyMessage.value.trim();
+        if (!name || !message) return;
+        replySubmit.disabled = true;
+        formStatus.textContent = "Mengirim balasan...";
+        try {
+          const response = await fetch(`/api/greetings/${greeting.id}/replies`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, message })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Balasan belum terkirim.");
+          expandedReplyThreads.add(greeting.id);
+          await refreshGreetings();
+          formStatus.textContent = "Balasanmu sudah terkirim.";
+        } catch (error) {
+          formStatus.textContent = error.message || "Balasan belum terkirim. Coba lagi.";
+        } finally {
+          replySubmit.disabled = false;
+        }
+      });
+      thread.append(summary, replyList, replyForm);
+      content.append(thread);
 
       const wave = document.createElement("button");
       wave.className = "wave";

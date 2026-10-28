@@ -45,6 +45,7 @@ SEED_GREETINGS = (
 def connect_database():
     connection = sqlite3.connect(DATABASE, timeout=10)
     connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
     try:
         yield connection
         connection.commit()
@@ -66,6 +67,15 @@ def initialize_database():
                 waves INTEGER NOT NULL DEFAULT 0
             )"""
         )
+        connection.execute(
+            """CREATE TABLE IF NOT EXISTS replies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                greeting_id INTEGER NOT NULL REFERENCES greetings(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                message TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )"""
+        )
         count = connection.execute("SELECT COUNT(*) FROM greetings").fetchone()[0]
         if count == 0:
             now = datetime.now(timezone.utc).isoformat()
@@ -83,6 +93,43 @@ def greeting_to_dict(row):
         "created_at": row["created_at"],
         "waves": row["waves"],
     }
+
+
+def reply_to_dict(row):
+    return {
+        "id": row["id"],
+        "greeting_id": row["greeting_id"],
+        "name": row["name"],
+        "message": row["message"],
+        "created_at": row["created_at"],
+    }
+
+
+def greetings_with_replies(connection):
+    greetings = connection.execute(
+        "SELECT id, name, message, created_at, waves "
+        "FROM greetings ORDER BY id DESC LIMIT 100"
+    ).fetchall()
+    if not greetings:
+        return []
+
+    greeting_ids = [greeting["id"] for greeting in greetings]
+    placeholders = ",".join(["?"] * len(greeting_ids))
+    reply_rows = connection.execute(
+        f"SELECT id, greeting_id, name, message, created_at FROM replies "
+        f"WHERE greeting_id IN ({placeholders}) ORDER BY id ASC",
+        greeting_ids,
+    ).fetchall()
+    replies_by_greeting = {greeting_id: [] for greeting_id in greeting_ids}
+    for reply in reply_rows:
+        replies_by_greeting[reply["greeting_id"]].append(reply_to_dict(reply))
+
+    result = []
+    for greeting in greetings:
+        item = greeting_to_dict(greeting)
+        item["replies"] = replies_by_greeting[greeting["id"]]
+        result.append(item)
+    return result
 
 
 def get_app_version():
@@ -168,11 +215,8 @@ class GreetingHandler(BaseHTTPRequestHandler):
 
         if path == "/api/greetings":
             with connect_database() as connection:
-                rows = connection.execute(
-                    "SELECT id, name, message, created_at, waves "
-                    "FROM greetings ORDER BY id DESC LIMIT 100"
-                ).fetchall()
-            return self.send_json(200, {"greetings": [greeting_to_dict(row) for row in rows]})
+                greetings = greetings_with_replies(connection)
+            return self.send_json(200, {"greetings": greetings})
 
         if path in ("/", "/index.html"):
             file_path = ROOT / "index.html"
@@ -246,6 +290,44 @@ class GreetingHandler(BaseHTTPRequestHandler):
                     (cursor.lastrowid,),
                 ).fetchone()
             return self.send_json(201, {"greeting": greeting_to_dict(row)})
+
+        reply_prefix = "/api/greetings/"
+        reply_suffix = "/replies"
+        if path.startswith(reply_prefix) and path.endswith(reply_suffix):
+            greeting_id = path[len(reply_prefix):-len(reply_suffix)].strip("/")
+            if not greeting_id.isdigit():
+                return self.send_json(404, {"error": "Sapaan tidak ditemukan."})
+            payload = self.read_json()
+            if not isinstance(payload, dict):
+                return self.send_json(400, {"error": "Format balasan tidak valid."})
+
+            name = payload.get("name")
+            message = payload.get("message")
+            if not isinstance(name, str) or not isinstance(message, str):
+                return self.send_json(400, {"error": "Nama dan balasan wajib diisi."})
+            name = name.strip()
+            message = message.strip()
+            if not name or len(name) > 32 or not message or len(message) > 180:
+                return self.send_json(400, {"error": "Nama atau balasan melewati batas."})
+
+            created_at = datetime.now(timezone.utc).isoformat()
+            with connect_database() as connection:
+                greeting = connection.execute(
+                    "SELECT id FROM greetings WHERE id = ?", (int(greeting_id),)
+                ).fetchone()
+                if greeting is None:
+                    return self.send_json(404, {"error": "Sapaan tidak ditemukan."})
+                cursor = connection.execute(
+                    "INSERT INTO replies (greeting_id, name, message, created_at) "
+                    "VALUES (?, ?, ?, ?)",
+                    (int(greeting_id), name, message, created_at),
+                )
+                row = connection.execute(
+                    "SELECT id, greeting_id, name, message, created_at "
+                    "FROM replies WHERE id = ?",
+                    (cursor.lastrowid,),
+                ).fetchone()
+            return self.send_json(201, {"reply": reply_to_dict(row)})
 
         prefix = "/api/greetings/"
         suffix = "/wave"

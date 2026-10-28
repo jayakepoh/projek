@@ -74,6 +74,52 @@ class AdminApiTests(unittest.TestCase):
         )
         self.assertEqual(len(self.request("/api/admin/greetings", token=token)[1]["greetings"]), 2)
 
+    def test_public_users_can_reply_and_delete_parent_cascades(self):
+        greetings = self.request("/api/greetings")[1]["greetings"]
+        greeting_id = greetings[0]["id"]
+
+        status, payload = self.request(
+            f"/api/greetings/{greeting_id}/replies",
+            "POST",
+            {"name": "Dita", "message": "Aku juga suka kopi susu!"},
+        )
+        self.assertEqual(status, 201)
+        self.assertEqual(payload["reply"]["greeting_id"], greeting_id)
+
+        refreshed = self.request("/api/greetings")[1]["greetings"]
+        parent = next(item for item in refreshed if item["id"] == greeting_id)
+        self.assertEqual(len(parent["replies"]), 1)
+        self.assertEqual(parent["replies"][0]["message"], "Aku juga suka kopi susu!")
+
+        self.assertEqual(
+            self.request(f"/api/greetings/99999/replies", "POST", {"name": "Dita", "message": "Hai"})[0],
+            404,
+        )
+        self.assertEqual(
+            self.request(f"/api/admin/greetings/{greeting_id}", "DELETE", token="invalid")[0],
+            401,
+        )
+
+        _, login = self.request(
+            "/api/admin/login",
+            "POST",
+            {"password": server.ADMIN_PASSWORD},
+        )
+        self.assertEqual(
+            self.request(
+                f"/api/admin/greetings/{greeting_id}",
+                "DELETE",
+                token=login["token"],
+            )[0],
+            200,
+        )
+        with server.connect_database() as connection:
+            remaining_replies = connection.execute(
+                "SELECT COUNT(*) FROM replies WHERE greeting_id = ?",
+                (greeting_id,),
+            ).fetchone()[0]
+        self.assertEqual(remaining_replies, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
