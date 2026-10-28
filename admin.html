@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f7f3">
+  <title>Admin Teman Ngopi</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #203d35;
+      --muted: #71847b;
+      --paper: #f2f7f3;
+      --line: #dce8df;
+      --green: #237b59;
+      --green-dark: #17593f;
+      --orange: #e9754e;
+      --white: #fff;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Segoe UI", sans-serif; }
+    button, input { font: inherit; }
+    .shell { width: min(820px, calc(100% - 32px)); margin: 0 auto; }
+    header { display: flex; min-height: 72px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    a { color: var(--green-dark); font-size: 13px; font-weight: 700; }
+    main { padding: 46px 0; }
+    h1 { margin: 0; font-family: Georgia, serif; font-size: 36px; font-weight: 400; }
+    .muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .login { width: min(100%, 400px); margin: 40px auto; }
+    label { display: block; margin-top: 20px; font-size: 12px; font-weight: 700; }
+    input { width: 100%; height: 44px; margin-top: 8px; padding: 0 12px; border: 1px solid #cfddd2; border-radius: 3px; background: var(--white); color: var(--ink); }
+    button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 3px; background: var(--green); color: var(--white); cursor: pointer; font-weight: 700; }
+    button:hover { background: var(--green-dark); }
+    button:disabled { cursor: wait; opacity: .6; }
+    .login button { width: 100%; margin-top: 16px; }
+    .toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .toolbar p { margin: 7px 0 0; }
+    .secondary { border: 1px solid var(--line); background: white; color: var(--ink); }
+    .secondary:hover { background: #e8f1e9; }
+    .list { border-top: 1px solid var(--line); }
+    .greeting { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+    .greeting h2 { display: inline; margin: 0; font-size: 14px; }
+    time { margin-left: 8px; color: var(--muted); font-size: 11px; }
+    .greeting p { margin: 7px 0 0; color: #52685e; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+    .remove { min-height: 34px; background: #a64c2e; font-size: 12px; }
+    .remove:hover { background: #813b24; }
+    .status { min-height: 20px; margin: 12px 0 0; color: var(--green-dark); font-size: 12px; }
+    [hidden] { display: none !important; }
+    @media (max-width: 520px) {
+      main { padding-top: 32px; }
+      h1 { font-size: 30px; }
+      .toolbar { align-items: start; }
+      .greeting { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+      .remove { justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header><strong>Teman Ngopi · Admin</strong><a href="/">Kembali ke website</a></header>
+    <main>
+      <section class="login" id="login-view">
+        <h1>Masuk admin</h1>
+        <p class="muted">Gunakan kata sandi admin yang diatur pada komputer server.</p>
+        <form id="login-form">
+          <label for="password">Kata sandi</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <button type="submit" id="login-button">Masuk</button>
+        </form>
+        <p class="status" id="login-status" role="status"></p>
+      </section>
+
+      <section id="admin-view" hidden>
+        <div class="toolbar">
+          <div><h1>Moderasi sapaan</h1><p class="muted" id="greeting-count">Memuat...</p></div>
+          <button class="secondary" id="logout-button" type="button">Keluar</button>
+        </div>
+        <div class="list" id="greeting-list" aria-live="polite"></div>
+        <p class="status" id="admin-status" role="status"></p>
+      </section>
+    </main>
+  </div>
+  <script>
+    const loginView = document.querySelector("#login-view");
+    const adminView = document.querySelector("#admin-view");
+    const loginForm = document.querySelector("#login-form");
+    const loginButton = document.querySelector("#login-button");
+    const loginStatus = document.querySelector("#login-status");
+    const adminStatus = document.querySelector("#admin-status");
+    const greetingList = document.querySelector("#greeting-list");
+    const greetingCount = document.querySelector("#greeting-count");
+    let token = "";
+
+    async function loadGreetings() {
+      const response = await fetch("/api/admin/greetings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store"
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Sapaan gagal dimuat.");
+      greetingCount.textContent = `${payload.greetings.length} sapaan terbaru`;
+      greetingList.replaceChildren(...payload.greetings.map(createGreeting));
+    }
+
+    function createGreeting(greeting) {
+      const article = document.createElement("article");
+      article.className = "greeting";
+      const content = document.createElement("div");
+      const title = document.createElement("h2");
+      title.textContent = greeting.name;
+      const timestamp = document.createElement("time");
+      timestamp.dateTime = greeting.created_at;
+      timestamp.textContent = new Date(greeting.created_at).toLocaleString("id-ID");
+      const message = document.createElement("p");
+      message.textContent = greeting.message;
+      content.append(title, timestamp, message);
+
+      const removeButton = document.createElement("button");
+      removeButton.className = "remove";
+      removeButton.type = "button";
+      removeButton.textContent = "Hapus";
+      removeButton.setAttribute("aria-label", `Hapus sapaan dari ${greeting.name}`);
+      removeButton.addEventListener("click", async () => {
+        if (!window.confirm(`Hapus sapaan dari ${greeting.name}?`)) return;
+        removeButton.disabled = true;
+        try {
+          const response = await fetch(`/api/admin/greetings/${greeting.id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Sapaan gagal dihapus.");
+          adminStatus.textContent = "Sapaan dihapus.";
+          await loadGreetings();
+        } catch (error) {
+          adminStatus.textContent = error.message;
+          removeButton.disabled = false;
+        }
+      });
+      article.append(content, removeButton);
+      return article;
+    }
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      loginButton.disabled = true;
+      loginStatus.textContent = "Memeriksa kata sandi...";
+      try {
+        const response = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: loginForm.elements.password.value })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Login gagal.");
+        token = payload.token;
+        await loadGreetings();
+        loginForm.reset();
+        loginView.hidden = true;
+        adminView.hidden = false;
+      } catch (error) {
+        loginStatus.textContent = error.message;
+      } finally {
+        loginButton.disabled = false;
+      }
+    });
+
+    document.querySelector("#logout-button").addEventListener("click", async () => {
+      await fetch("/api/admin/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      token = "";
+      greetingList.replaceChildren();
+      adminView.hidden = true;
+      loginView.hidden = false;
+      loginStatus.textContent = "Anda sudah keluar.";
+    });
+  </script>
+</body>
+</html>

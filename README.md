@@ -25,3 +25,23 @@ Ikon PWA dapat dibuat ulang tanpa paket tambahan:
 ```powershell
 py make_icons.py
 ```
+
+## Admin dan akses publik
+
+Panel moderasi tersedia di `/admin`. Sebelum menjalankan server, atur kata sandi admin di PowerShell. Kata sandi minimal 16 karakter; nilainya hanya berlaku pada terminal tersebut:
+
+```powershell
+$secure = Read-Host "Kata sandi admin (minimal 16 karakter)" -AsSecureString
+$env:ADMIN_PASSWORD = [System.Net.NetworkCredential]::new("", $secure).Password
+py server.py
+```
+
+Login admin berlaku selama server berjalan dan sesi berakhir setelah delapan jam. Daftar admin menampilkan hingga 200 sapaan terbaru dan dapat menghapus sapaan. Jika `ADMIN_PASSWORD` belum diatur, halaman publik tetap berjalan tetapi login admin dinonaktifkan.
+
+Untuk mencoba akses internet dari komputer sendiri, pasang `cloudflared` dari dokumentasi Cloudflare. Biarkan server tetap berjalan, lalu buka terminal PowerShell kedua dan jalankan:
+
+```powershell
+cloudflared tunnel --url http://localhost:8000
+```
+
+Buka URL HTTPS `trycloudflare.com` yang ditampilkan dari HP atau bagikan ke publik. URL uji ini berubah saat tunnel dimulai ulang dan hanya aktif selama komputer, server, serta tunnel menyala. Jangan bagikan URL admin tanpa kata sandi yang kuat. Untuk alamat tetap dan layanan yang selalu aktif, gunakan domain serta tunnel bernama atau deploy ke VPS; komputer rumah bukan pengganti hosting dengan uptime terjamin. Backup file database `teman_ngopi.sqlite3` secara berkala.
