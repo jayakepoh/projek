@@ -68,6 +68,9 @@
     .actions button:hover { background: rgb(234 245 233 / 10%); }
     footer { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; color: var(--muted); font-size: 10px; }
     footer strong { color: var(--lime); font-weight: 700; }
+    #updateButton { min-height: 34px; padding: 0 12px; color: #18251c; background: var(--lime); border: 1px solid transparent; font-size: 11px; }
+    #updateButton:hover { background: #e6ff92; }
+    #updateButton:focus-visible { outline: 3px solid white; outline-offset: 3px; }
     @media (max-width: 560px) {
       .page { width: min(100% - 20px, 1180px); padding-top: 16px; }
       header { margin-bottom: 12px; }
@@ -129,6 +132,7 @@
           <button class="touch-control" type="button" data-direction="1" aria-label="Gerakkan bet ke bawah" title="Gerakkan bet ke bawah">↓</button>
         </div>
         <div class="actions">
+          <button id="updateButton" type="button" hidden>Perbarui game</button>
           <button id="installButton" type="button" hidden>Pasang aplikasi</button>
           <button id="pauseButton" type="button" aria-label="Jeda permainan">Jeda</button>
           <button id="resetButton" type="button">Ulangi</button>
@@ -522,10 +526,41 @@
   </script>
   <script>
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch((error) => {
+      const updateButton = document.querySelector("#updateButton");
+      let waitingWorker = null;
+      let updateRequested = false;
+
+      updateButton.addEventListener("click", () => {
+        if (!waitingWorker) return;
+        updateRequested = true;
+        updateButton.disabled = true;
+        updateButton.textContent = "Memperbarui...";
+        waitingWorker.postMessage({ type: "SKIP_WAITING" });
+      });
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (updateRequested) window.location.reload();
+      });
+
+      window.addEventListener("load", async () => {
+        try {
+          const registration = await navigator.serviceWorker.register("./sw.js");
+          const showUpdateButton = () => {
+            if (!registration.waiting || !navigator.serviceWorker.controller) return;
+            waitingWorker = registration.waiting;
+            updateButton.hidden = false;
+          };
+
+          showUpdateButton();
+          registration.addEventListener("updatefound", () => {
+            const installingWorker = registration.installing;
+            installingWorker?.addEventListener("statechange", () => {
+              if (installingWorker.state === "installed") showUpdateButton();
+            });
+          });
+        } catch (error) {
           console.error("Service worker gagal didaftarkan:", error);
-        });
+        }
       });
     }
   </script>
