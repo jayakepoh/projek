@@ -53,6 +53,10 @@
     .controls { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 58px; padding: 10px 14px; background: var(--panel); border: 1px solid rgb(234 245 233 / 10%); border-top: 0; }
     .hint { color: var(--muted); font-size: 11px; line-height: 1.5; }
     .hint strong { color: var(--ink); }
+    .touch-controls { display: none; gap: 10px; }
+    .touch-control { display: grid; width: 54px; aspect-ratio: 1; place-items: center; padding: 0; color: var(--ink); background: transparent; border: 1px solid rgb(234 245 233 / 28%); font-size: 22px; touch-action: none; user-select: none; }
+    .touch-control:hover { background: rgb(234 245 233 / 10%); transform: none; }
+    .touch-control:active { color: #18251c; background: var(--lime); transform: scale(.96); }
     .actions { display: flex; gap: 8px; }
     .actions button { min-height: 34px; padding: 0 12px; color: var(--ink); background: transparent; border: 1px solid rgb(234 245 233 / 28%); font-size: 11px; }
     .actions button:hover { background: rgb(234 245 233 / 10%); }
@@ -67,9 +71,11 @@
       .score-side { gap: 6px; font-size: 9px; letter-spacing: .4px; }
       .score { min-width: 26px; font-size: 27px; }
       .versus { font-size: 8px; letter-spacing: .4px; }
-      .controls { align-items: flex-start; padding: 10px; }
+      .controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px; }
       .hint { max-width: 190px; font-size: 10px; }
+      .touch-controls { display: flex; grid-column: 1 / -1; grid-row: 2; justify-self: center; }
       .actions { flex-direction: column; gap: 5px; }
+      .actions { grid-column: 2; grid-row: 1; }
       .actions button { min-height: 30px; }
       footer { font-size: 9px; }
     }
@@ -103,7 +109,11 @@
         </div>
       </div>
       <div class="controls">
-        <div class="hint"><strong>Gerakkan bet:</strong> mouse, sentuh meja, atau tombol ↑ ↓ / W S</div>
+        <div class="hint"><strong>Gerakkan bet:</strong> mouse, sentuh meja, ↑ ↓ / W S, atau tahan tombol panah di HP.</div>
+        <div class="touch-controls" role="group" aria-label="Tombol gerak bet">
+          <button class="touch-control" type="button" data-direction="-1" aria-label="Gerakkan bet ke atas" title="Gerakkan bet ke atas">↑</button>
+          <button class="touch-control" type="button" data-direction="1" aria-label="Gerakkan bet ke bawah" title="Gerakkan bet ke bawah">↓</button>
+        </div>
         <div class="actions">
           <button id="installButton" type="button" hidden>Pasang aplikasi</button>
           <button id="pauseButton" type="button" aria-label="Jeda permainan">Jeda</button>
@@ -123,6 +133,7 @@
       const overlayMessage = document.querySelector("#overlayMessage");
       const startButton = document.querySelector("#startButton");
       const installButton = document.querySelector("#installButton");
+      const touchControls = document.querySelectorAll(".touch-control");
       const pauseButton = document.querySelector("#pauseButton");
       const playerScoreLabel = document.querySelector("#playerScore");
       const computerScoreLabel = document.querySelector("#computerScore");
@@ -142,6 +153,7 @@
       let lastTime = 0;
       let animationFrame = 0;
       let installPrompt = null;
+      let touchDirection = 0;
       const keys = new Set();
       let bestScore = Number(localStorage.getItem("pingpong-best") || 0);
       bestScoreLabel.textContent = bestScore;
@@ -347,6 +359,7 @@
         const frameScale = Math.min(delta * 60, 2);
         if (keys.has("ArrowUp") || keys.has("w")) movePlayer(-paddle.speed * frameScale);
         if (keys.has("ArrowDown") || keys.has("s")) movePlayer(paddle.speed * frameScale);
+        if (touchDirection) movePlayer(touchDirection * paddle.speed * frameScale);
         const computerTarget = ball.y;
         const computerSpeed = 4.1 * frameScale;
         if (computerY < computerTarget - 10) computerY = Math.min(computerTarget - 10, computerY + computerSpeed);
@@ -397,6 +410,17 @@
         pointerMove(event);
       });
       arena.addEventListener("pointermove", pointerMove);
+      touchControls.forEach((button) => {
+        const stopMoving = () => { touchDirection = 0; };
+        button.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          button.setPointerCapture(event.pointerId);
+          touchDirection = Number(button.dataset.direction);
+        });
+        button.addEventListener("pointerup", stopMoving);
+        button.addEventListener("pointercancel", stopMoving);
+        button.addEventListener("lostpointercapture", stopMoving);
+      });
       window.addEventListener("resize", resizeRenderer);
       new ResizeObserver(resizeRenderer).observe(arena);
       window.addEventListener("keydown", (event) => {
@@ -409,7 +433,10 @@
         const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
         keys.delete(key);
       });
-      window.addEventListener("blur", () => keys.clear());
+      window.addEventListener("blur", () => {
+        keys.clear();
+        touchDirection = 0;
+      });
       startButton.addEventListener("click", () => {
         if (overlayTitle.textContent === "Jeda sebentar") resumeGame();
         else beginGame();
