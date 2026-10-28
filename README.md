@@ -12,13 +12,17 @@ Buka [http://localhost:8000](http://localhost:8000). Sapaan dan jumlah sapa ters
 
 Untuk mengajak teman yang terhubung ke Wi-Fi yang sama, bagikan alamat komputer ini. Cari alamat IPv4 dengan `ipconfig`, lalu teman membuka `http://ALAMAT-IP:8000`. Jika tidak dapat diakses, izinkan Python menerima koneksi jaringan lokal lewat Windows Firewall.
 
-Server memperbarui papan setiap lima detik. Jangan membuka server ini langsung ke internet tanpa menambahkan akun, moderasi, dan perlindungan spam.
+Server memperbarui papan setiap lima detik. Akun browser mengikat nama ke sapaan dan balasan, tetapi bukan pengganti verifikasi nomor telepon atau perlindungan spam.
+
+## Akun pengguna
+
+Saat pertama membuka website di sebuah browser, pengguna membuat nama akun sekali. ID acak disimpan di penyimpanan lokal browser dan nama akun di database server; sapaan dan balasan berikutnya memakai nama tersebut. Setiap profil browser memiliki akun terpisah. Menghapus data situs atau memakai browser lain akan membuat ID baru. Sistem ini tidak membuktikan satu akun per nomor telepon atau per orang.
 
 ## Pasang di Android
 
 Untuk pemasangan dari Chrome dan agar teman bisa ikut menyapa dari perangkat lain, deploy aplikasi di alamat HTTPS publik. Buka alamat itu di Chrome Android, lalu pilih **Pasang aplikasi** jika tombolnya tersedia, atau buka menu Chrome dan pilih **Tambahkan ke layar utama**. Alamat `localhost` hanya berlaku di komputer yang menjalankan server; hosting publik juga harus memakai penyimpanan persisten agar database sapaan tidak hilang saat server dimulai ulang.
 
-Service worker menyimpan tampilan aplikasi untuk dibuka kembali saat offline. Mengirim dan melihat sapaan tetap memerlukan koneksi ke backend. Aplikasi memeriksa versi file saat dibuka, saat kembali ke tab, dan setiap satu menit; tombol **Perbarui** muncul saat ada perubahan.
+Service worker menyimpan tampilan aplikasi untuk dibuka kembali saat offline. Saat perangkat online, aplikasi memeriksa pembaruan ketika dibuka atau kembali ke tab, lalu memasang versi baru dan memuat ulang halaman secara otomatis. Perubahan tidak dapat diterima ketika aplikasi tertutup atau perangkat offline; pembaruan diterapkan saat pengguna kembali membuka aplikasi dengan koneksi internet. Mengirim dan melihat sapaan tetap memerlukan koneksi ke backend.
 
 Ikon PWA dapat dibuat ulang tanpa paket tambahan:
 

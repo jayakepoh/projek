@@ -2,6 +2,7 @@ import json
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import sqlite3
 import threading
@@ -19,6 +20,7 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8000"))
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 MAX_BODY_BYTES = 4096
+DEVICE_ID_PATTERN = re.compile(r"^[a-f0-9]{64}$")
 STATIC_FILES = {
     "/manifest.webmanifest": ("manifest.webmanifest", "application/manifest+json; charset=utf-8"),
     "/sw.js": ("sw.js", "text/javascript; charset=utf-8"),
@@ -59,6 +61,13 @@ def connect_database():
 def initialize_database():
     with connect_database() as connection:
         connection.execute(
+            """CREATE TABLE IF NOT EXISTS accounts (
+                device_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )"""
+        )
+        connection.execute(
             """CREATE TABLE IF NOT EXISTS greetings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -71,10 +80,37 @@ def initialize_database():
             """CREATE TABLE IF NOT EXISTS replies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 greeting_id INTEGER NOT NULL REFERENCES greetings(id) ON DELETE CASCADE,
+                parent_reply_id INTEGER REFERENCES replies(id) ON DELETE CASCADE,
                 name TEXT NOT NULL,
                 message TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )"""
+        )
+        reply_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(replies)")
+        }
+        if "parent_reply_id" not in reply_columns:
+            connection.execute(
+                "ALTER TABLE replies ADD COLUMN parent_reply_id "
+                "INTEGER REFERENCES replies(id) ON DELETE CASCADE"
+            )
+            reply_columns.add("parent_reply_id")
+        if "device_id" not in reply_columns:
+            connection.execute(
+                "ALTER TABLE replies ADD COLUMN device_id "
+                "TEXT REFERENCES accounts(device_id) ON DELETE SET NULL"
+            )
+        greeting_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(greetings)")
+        }
+        if "device_id" not in greeting_columns:
+            connection.execute(
+                "ALTER TABLE greetings ADD COLUMN device_id "
+                "TEXT REFERENCES accounts(device_id) ON DELETE SET NULL"
+            )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS replies_greeting_parent "
+            "ON replies (greeting_id, parent_reply_id, id)"
         )
         count = connection.execute("SELECT COUNT(*) FROM greetings").fetchone()[0]
         if count == 0:
@@ -99,9 +135,11 @@ def reply_to_dict(row):
     return {
         "id": row["id"],
         "greeting_id": row["greeting_id"],
+        "parent_reply_id": row["parent_reply_id"],
         "name": row["name"],
         "message": row["message"],
         "created_at": row["created_at"],
+        "children": [],
     }
 
 
@@ -116,13 +154,20 @@ def greetings_with_replies(connection):
     greeting_ids = [greeting["id"] for greeting in greetings]
     placeholders = ",".join(["?"] * len(greeting_ids))
     reply_rows = connection.execute(
-        f"SELECT id, greeting_id, name, message, created_at FROM replies "
+        f"SELECT id, greeting_id, parent_reply_id, name, message, created_at FROM replies "
         f"WHERE greeting_id IN ({placeholders}) ORDER BY id ASC",
         greeting_ids,
     ).fetchall()
+    replies_by_id = {}
     replies_by_greeting = {greeting_id: [] for greeting_id in greeting_ids}
     for reply in reply_rows:
-        replies_by_greeting[reply["greeting_id"]].append(reply_to_dict(reply))
+        item = reply_to_dict(reply)
+        replies_by_id[item["id"]] = item
+        parent = replies_by_id.get(item["parent_reply_id"])
+        if parent is None:
+            replies_by_greeting[item["greeting_id"]].append(item)
+        else:
+            parent["children"].append(item)
 
     result = []
     for greeting in greetings:
@@ -203,6 +248,20 @@ class GreetingHandler(BaseHTTPRequestHandler):
         if path == "/api/version":
             return self.send_json(200, {"version": get_app_version()})
 
+        account_prefix = "/api/accounts/"
+        if path.startswith(account_prefix):
+            device_id = path[len(account_prefix):].strip("/")
+            if not DEVICE_ID_PATTERN.fullmatch(device_id):
+                return self.send_json(400, {"error": "ID akun tidak valid."})
+            with connect_database() as connection:
+                account = connection.execute(
+                    "SELECT device_id, name FROM accounts WHERE device_id = ?",
+                    (device_id,),
+                ).fetchone()
+            if account is None:
+                return self.send_json(404, {"error": "Akun belum terdaftar."})
+            return self.send_json(200, {"account": dict(account)})
+
         if path == "/api/admin/greetings":
             if not self.is_admin():
                 return self.send_json(401, {"error": "Login admin diperlukan."})
@@ -240,6 +299,32 @@ class GreetingHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
+        if path == "/api/accounts":
+            payload = self.read_json()
+            if not isinstance(payload, dict):
+                return self.send_json(400, {"error": "Format akun tidak valid."})
+            device_id = payload.get("device_id")
+            name = payload.get("name")
+            if not isinstance(device_id, str) or not DEVICE_ID_PATTERN.fullmatch(device_id):
+                return self.send_json(400, {"error": "ID akun tidak valid."})
+            if not isinstance(name, str):
+                return self.send_json(400, {"error": "Nama akun wajib diisi."})
+            name = name.strip()
+            if not name or len(name) > 32:
+                return self.send_json(400, {"error": "Nama akun harus berisi 1 sampai 32 karakter."})
+            created_at = datetime.now(timezone.utc).isoformat()
+            with connect_database() as connection:
+                existing = connection.execute(
+                    "SELECT name FROM accounts WHERE device_id = ?", (device_id,)
+                ).fetchone()
+                if existing is not None:
+                    return self.send_json(409, {"error": "Browser ini sudah memiliki akun."})
+                connection.execute(
+                    "INSERT INTO accounts (device_id, name, created_at) VALUES (?, ?, ?)",
+                    (device_id, name, created_at),
+                )
+            return self.send_json(201, {"account": {"device_id": device_id, "name": name}})
+
         if path == "/api/admin/login":
             if not ADMIN_PASSWORD:
                 return self.send_json(503, {"error": "ADMIN_PASSWORD belum diatur pada server."})
@@ -270,20 +355,27 @@ class GreetingHandler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 return self.send_json(400, {"error": "Format sapaan tidak valid."})
 
-            name = payload.get("name")
+            device_id = payload.get("device_id")
             message = payload.get("message")
-            if not isinstance(name, str) or not isinstance(message, str):
-                return self.send_json(400, {"error": "Nama dan pesan wajib diisi."})
-            name = name.strip()
+            if not isinstance(device_id, str) or not DEVICE_ID_PATTERN.fullmatch(device_id):
+                return self.send_json(401, {"error": "Buat akun browser sebelum mengirim sapaan."})
+            if not isinstance(message, str):
+                return self.send_json(400, {"error": "Pesan sapaan wajib diisi."})
             message = message.strip()
-            if not name or len(name) > 32 or not message or len(message) > 180:
-                return self.send_json(400, {"error": "Nama atau pesan melewati batas."})
+            if not message or len(message) > 180:
+                return self.send_json(400, {"error": "Pesan sapaan wajib diisi dan maksimal 180 karakter."})
 
             created_at = datetime.now(timezone.utc).isoformat()
             with connect_database() as connection:
+                account = connection.execute(
+                    "SELECT name FROM accounts WHERE device_id = ?", (device_id,)
+                ).fetchone()
+                if account is None:
+                    return self.send_json(401, {"error": "Akun browser tidak ditemukan."})
                 cursor = connection.execute(
-                    "INSERT INTO greetings (name, message, created_at) VALUES (?, ?, ?)",
-                    (name, message, created_at),
+                    "INSERT INTO greetings (name, message, created_at, device_id) "
+                    "VALUES (?, ?, ?, ?)",
+                    (account["name"], message, created_at, device_id),
                 )
                 row = connection.execute(
                     "SELECT id, name, message, created_at, waves FROM greetings WHERE id = ?",
@@ -301,14 +393,22 @@ class GreetingHandler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 return self.send_json(400, {"error": "Format balasan tidak valid."})
 
-            name = payload.get("name")
+            device_id = payload.get("device_id")
             message = payload.get("message")
-            if not isinstance(name, str) or not isinstance(message, str):
-                return self.send_json(400, {"error": "Nama dan balasan wajib diisi."})
-            name = name.strip()
+            parent_reply_id = payload.get("parent_reply_id")
+            if not isinstance(device_id, str) or not DEVICE_ID_PATTERN.fullmatch(device_id):
+                return self.send_json(401, {"error": "Buat akun browser sebelum membalas."})
+            if not isinstance(message, str):
+                return self.send_json(400, {"error": "Isi balasan wajib diisi."})
+            if parent_reply_id is not None and (
+                isinstance(parent_reply_id, bool)
+                or not isinstance(parent_reply_id, int)
+                or parent_reply_id < 1
+            ):
+                return self.send_json(400, {"error": "Balasan induk tidak valid."})
             message = message.strip()
-            if not name or len(name) > 32 or not message or len(message) > 180:
-                return self.send_json(400, {"error": "Nama atau balasan melewati batas."})
+            if not message or len(message) > 180:
+                return self.send_json(400, {"error": "Balasan wajib diisi dan maksimal 180 karakter."})
 
             created_at = datetime.now(timezone.utc).isoformat()
             with connect_database() as connection:
@@ -317,13 +417,25 @@ class GreetingHandler(BaseHTTPRequestHandler):
                 ).fetchone()
                 if greeting is None:
                     return self.send_json(404, {"error": "Sapaan tidak ditemukan."})
+                account = connection.execute(
+                    "SELECT name FROM accounts WHERE device_id = ?", (device_id,)
+                ).fetchone()
+                if account is None:
+                    return self.send_json(401, {"error": "Akun browser tidak ditemukan."})
+                if parent_reply_id is not None:
+                    parent = connection.execute(
+                        "SELECT id FROM replies WHERE id = ? AND greeting_id = ?",
+                        (parent_reply_id, int(greeting_id)),
+                    ).fetchone()
+                    if parent is None:
+                        return self.send_json(404, {"error": "Balasan yang dituju tidak ditemukan."})
                 cursor = connection.execute(
-                    "INSERT INTO replies (greeting_id, name, message, created_at) "
-                    "VALUES (?, ?, ?, ?)",
-                    (int(greeting_id), name, message, created_at),
+                    "INSERT INTO replies (greeting_id, parent_reply_id, name, message, created_at, device_id) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (int(greeting_id), parent_reply_id, account["name"], message, created_at, device_id),
                 )
                 row = connection.execute(
-                    "SELECT id, greeting_id, name, message, created_at "
+                    "SELECT id, greeting_id, parent_reply_id, name, message, created_at "
                     "FROM replies WHERE id = ?",
                     (cursor.lastrowid,),
                 ).fetchone()

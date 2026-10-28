@@ -84,6 +84,18 @@
       font-weight: 700;
     }
 
+    .account-label { color: var(--green-dark); font-size: 11px; font-weight: 800; }
+    .account-dialog { width: min(420px, calc(100% - 32px)); padding: 26px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); }
+    .account-dialog::backdrop { background: rgb(24 48 38 / 55%); }
+    .account-dialog h2 { margin: 0; font-family: "DM Serif Display", Georgia, serif; font-size: 29px; font-weight: 400; }
+    .account-dialog p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .account-dialog label { display: block; margin-top: 16px; color: #536b5f; font-size: 11px; font-weight: 800; }
+    .account-dialog input { width: 100%; height: 42px; margin-top: 7px; padding: 0 11px; border: 1px solid #cfddd2; border-radius: 3px; font: inherit; }
+    .account-dialog input:focus { border-color: var(--green); outline: 2px solid rgb(35 123 89 / 12%); }
+    .account-dialog button { min-height: 42px; width: 100%; margin-top: 15px; border: 0; border-radius: 3px; background: var(--green); color: white; cursor: pointer; font-size: 11px; font-weight: 800; }
+    .account-dialog button:disabled { cursor: wait; opacity: .6; }
+    .account-status { min-height: 18px; margin-bottom: 0; color: #a64c2e !important; }
+
     .install-button {
       display: flex;
       min-height: 36px;
@@ -333,7 +345,7 @@
       list-style-position: inside;
     }
 
-    .reply-list { display: grid; gap: 10px; margin: 12px 0; padding-left: 12px; border-left: 2px solid #d5e4d9; }
+    .reply-list, .reply-children { display: grid; gap: 10px; margin: 12px 0; padding-left: 12px; border-left: 2px solid #d5e4d9; }
 
     .reply-item { min-width: 0; }
     .reply-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 3px; }
@@ -358,6 +370,7 @@
     .reply-submit { justify-self: start; min-height: 34px; padding: 0 11px; border: 0; border-radius: 3px; background: var(--green); color: white; cursor: pointer; font-size: 10px; font-weight: 800; }
     .reply-submit:hover { background: var(--green-dark); }
     .reply-submit:disabled { cursor: wait; opacity: .6; }
+    .reply-compose { margin-top: 7px; }
 
     .compose {
       position: sticky;
@@ -497,10 +510,7 @@
         <span>teman ngopi</span>
       </a>
       <div class="topbar-right">
-        <button class="install-button update-button" id="update-button" type="button" aria-label="Perbarui Teman Ngopi" title="Pembaruan tersedia" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2"/></svg>
-          <span>Perbarui</span>
-        </button>
+        <span class="account-label" id="account-label" hidden></span>
         <button class="install-button" id="install-button" type="button" aria-label="Pasang Teman Ngopi" title="Pasang Teman Ngopi" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5"/><path d="M5 17v3h14v-3"/></svg>
           <span>Pasang aplikasi</span>
@@ -535,7 +545,7 @@
 
         <form class="compose" id="greeting-form">
           <div class="form-heading"><h2>Tinggalkan sapa</h2><p>Kenalan santai saja. Ceritakan sedikit tentang harimu.</p></div>
-          <label class="field"><span>Namamu</span><input id="name" name="name" type="text" maxlength="32" placeholder="Misalnya, Dita" autocomplete="name" required></label>
+          <p class="muted" id="compose-account"></p>
           <label class="field"><span>Pesan sapaan</span><textarea id="message" name="message" maxlength="180" placeholder="Hai! Lagi ngopi sambil..." required></textarea></label>
           <button class="submit-button" type="submit"><span>Kirim sapaan</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           <p class="form-status" id="form-status" role="status"></p>
@@ -546,6 +556,17 @@
     <footer><span>Teman Ngopi · Ruang sapa yang ramah.</span><span>Dibuat untuk obrolan kecil yang menyenangkan.</span></footer>
   </div>
 
+  <dialog class="account-dialog" id="account-dialog" aria-labelledby="account-title">
+    <form id="account-form">
+      <h2 id="account-title">Buat akun</h2>
+      <p>Nama ini dipakai untuk semua sapaan dan balasan dari browser ini.</p>
+      <label for="account-name-input">Nama akun</label>
+      <input id="account-name-input" name="name" type="text" maxlength="32" autocomplete="nickname" placeholder="Misalnya, Dita" required>
+      <button id="account-submit" type="submit">Buat akun dan lanjutkan</button>
+      <p class="account-status" id="account-status" role="status"></p>
+    </form>
+  </dialog>
+
   <script>
     const form = document.querySelector("#greeting-form");
     const greetingList = document.querySelector("#greeting-list");
@@ -554,12 +575,19 @@
     const connectionStatus = document.querySelector("#connection-status");
     const connectionDot = document.querySelector("#connection-dot");
     const installButton = document.querySelector("#install-button");
-    const updateButton = document.querySelector("#update-button");
     const submitButton = form.querySelector(".submit-button");
+    const accountDialog = document.querySelector("#account-dialog");
+    const accountForm = document.querySelector("#account-form");
+    const accountSubmit = document.querySelector("#account-submit");
+    const accountStatus = document.querySelector("#account-status");
+    const accountLabel = document.querySelector("#account-label");
+    const composeAccount = document.querySelector("#compose-account");
+    const accountIdKey = "teman-ngopi-account-id";
+    let accountId = localStorage.getItem(accountIdKey);
+    let currentAccount = null;
     let installPrompt;
     let serviceWorkerRegistration;
     let isReloadingForUpdate = false;
-    let appVersion;
     let lastGreetings = "";
     const expandedReplyThreads = new Set();
     const colors = [
@@ -568,6 +596,68 @@
       ["#e4efdf", "#3e7352"],
       ["#f4e0e5", "#995368"]
     ];
+
+    function createAccountId() {
+      const bytes = new Uint8Array(32);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    if (!/^[a-f0-9]{64}$/.test(accountId || "")) {
+      accountId = createAccountId();
+      localStorage.setItem(accountIdKey, accountId);
+    }
+
+    function setCurrentAccount(account) {
+      currentAccount = account;
+      accountLabel.textContent = `Akun: ${account.name}`;
+      accountLabel.hidden = false;
+      composeAccount.textContent = `Menulis sebagai ${account.name}`;
+    }
+
+    async function loadCurrentAccount() {
+      try {
+        const response = await fetch(`/api/accounts/${accountId}`, { cache: "no-store" });
+        if (response.status === 404) {
+          accountDialog.showModal();
+          return;
+        }
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Akun gagal dimuat.");
+        setCurrentAccount(payload.account);
+      } catch {
+        accountStatus.textContent = "Tidak dapat terhubung ke server. Coba muat ulang halaman.";
+      }
+    }
+
+    accountDialog.addEventListener("cancel", (event) => {
+      if (!currentAccount) event.preventDefault();
+    });
+
+    accountForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const name = accountForm.elements.name.value.trim();
+      if (!name) return;
+      accountSubmit.disabled = true;
+      accountStatus.textContent = "Membuat akun...";
+      try {
+        const response = await fetch("/api/accounts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ device_id: accountId, name })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Akun gagal dibuat.");
+        setCurrentAccount(payload.account);
+        accountDialog.close();
+        accountForm.reset();
+        accountStatus.textContent = "";
+      } catch (error) {
+        accountStatus.textContent = error.message || "Akun gagal dibuat. Coba lagi.";
+      } finally {
+        accountSubmit.disabled = false;
+      }
+    });
 
     function setConnection(isConnected) {
       connectionStatus.textContent = isConnected ? "Meja sapa terbuka" : "Menyambung ulang...";
@@ -588,6 +678,82 @@
       const hours = Math.floor(minutes / 60);
       if (hours < 24) return `${hours} jam lalu`;
       return `${Math.floor(hours / 24)} hari lalu`;
+    }
+
+    function countReplies(replies) {
+      return replies.reduce((count, reply) => count + 1 + countReplies(reply.children || []), 0);
+    }
+
+    function createReplyForm(greetingId, parentReplyId = null) {
+      const replyForm = document.createElement("form");
+      replyForm.className = "reply-form";
+      const replyMessage = document.createElement("textarea");
+      replyMessage.name = "message";
+      replyMessage.maxLength = 180;
+      replyMessage.placeholder = "Tulis balasan...";
+      replyMessage.required = true;
+      const replySubmit = document.createElement("button");
+      replySubmit.className = "reply-submit";
+      replySubmit.type = "submit";
+      replySubmit.textContent = "Kirim balasan";
+      replyForm.append(replyMessage, replySubmit);
+      replyForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const message = replyMessage.value.trim();
+        if (!currentAccount || !message) return;
+        replySubmit.disabled = true;
+        formStatus.textContent = "Mengirim balasan...";
+        try {
+          const response = await fetch(`/api/greetings/${greetingId}/replies`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ device_id: accountId, message, parent_reply_id: parentReplyId })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Balasan belum terkirim.");
+          expandedReplyThreads.add(greetingId);
+          await refreshGreetings();
+          formStatus.textContent = "Balasanmu sudah terkirim.";
+        } catch (error) {
+          formStatus.textContent = error.message || "Balasan belum terkirim. Coba lagi.";
+        } finally {
+          replySubmit.disabled = false;
+        }
+      });
+      return replyForm;
+    }
+
+    function createReplyItem(reply, greetingId) {
+      const item = document.createElement("article");
+      item.className = "reply-item";
+      const meta = document.createElement("div");
+      meta.className = "reply-meta";
+      const author = document.createElement("strong");
+      author.textContent = reply.name;
+      const timestamp = document.createElement("time");
+      timestamp.dateTime = reply.created_at;
+      timestamp.textContent = formatTime(reply.created_at);
+      const text = document.createElement("p");
+      text.className = "reply-text";
+      text.textContent = reply.message;
+      meta.append(author, timestamp);
+      item.append(meta, text);
+
+      const children = reply.children || [];
+      if (children.length) {
+        const childList = document.createElement("div");
+        childList.className = "reply-children";
+        for (const child of children) childList.append(createReplyItem(child, greetingId));
+        item.append(childList);
+      }
+
+      const replyDetails = document.createElement("details");
+      replyDetails.className = "reply-compose";
+      const summary = document.createElement("summary");
+      summary.textContent = "Balas";
+      replyDetails.append(summary, createReplyForm(greetingId, reply.id));
+      item.append(replyDetails);
+      return item;
     }
 
     function createGreeting(greeting, index) {
@@ -622,73 +788,15 @@
         else expandedReplyThreads.delete(greeting.id);
       });
       const summary = document.createElement("summary");
-      summary.textContent = greeting.replies.length
-        ? `Balas · ${greeting.replies.length}`
+      const replies = greeting.replies || [];
+      const replyCount = countReplies(replies);
+      summary.textContent = replyCount
+        ? `Percakapan · ${replyCount}`
         : "Balas sapaan ini";
       const replyList = document.createElement("div");
       replyList.className = "reply-list";
-      for (const reply of greeting.replies) {
-        const replyItem = document.createElement("div");
-        replyItem.className = "reply-item";
-        const replyMeta = document.createElement("div");
-        replyMeta.className = "reply-meta";
-        const replyAuthor = document.createElement("strong");
-        replyAuthor.textContent = reply.name;
-        const replyTimestamp = document.createElement("time");
-        replyTimestamp.dateTime = reply.created_at;
-        replyTimestamp.textContent = formatTime(reply.created_at);
-        const replyText = document.createElement("p");
-        replyText.className = "reply-text";
-        replyText.textContent = reply.message;
-        replyMeta.append(replyAuthor, replyTimestamp);
-        replyItem.append(replyMeta, replyText);
-        replyList.append(replyItem);
-      }
-
-      const replyForm = document.createElement("form");
-      replyForm.className = "reply-form";
-      const replyName = document.createElement("input");
-      replyName.name = "name";
-      replyName.type = "text";
-      replyName.maxLength = 32;
-      replyName.placeholder = "Namamu";
-      replyName.autocomplete = "name";
-      replyName.required = true;
-      const replyMessage = document.createElement("textarea");
-      replyMessage.name = "message";
-      replyMessage.maxLength = 180;
-      replyMessage.placeholder = "Tulis balasan...";
-      replyMessage.required = true;
-      const replySubmit = document.createElement("button");
-      replySubmit.className = "reply-submit";
-      replySubmit.type = "submit";
-      replySubmit.textContent = "Kirim balasan";
-      replyForm.append(replyName, replyMessage, replySubmit);
-      replyForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const name = replyName.value.trim();
-        const message = replyMessage.value.trim();
-        if (!name || !message) return;
-        replySubmit.disabled = true;
-        formStatus.textContent = "Mengirim balasan...";
-        try {
-          const response = await fetch(`/api/greetings/${greeting.id}/replies`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, message })
-          });
-          const payload = await response.json();
-          if (!response.ok) throw new Error(payload.error || "Balasan belum terkirim.");
-          expandedReplyThreads.add(greeting.id);
-          await refreshGreetings();
-          formStatus.textContent = "Balasanmu sudah terkirim.";
-        } catch (error) {
-          formStatus.textContent = error.message || "Balasan belum terkirim. Coba lagi.";
-        } finally {
-          replySubmit.disabled = false;
-        }
-      });
-      thread.append(summary, replyList, replyForm);
+      for (const reply of replies) replyList.append(createReplyItem(reply, greeting.id));
+      thread.append(summary, replyList, createReplyForm(greeting.id));
       content.append(thread);
 
       const wave = document.createElement("button");
@@ -722,21 +830,6 @@
       }
     }
 
-    async function checkAppVersion() {
-      try {
-        const response = await fetch("/api/version", { cache: "no-store" });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (appVersion === undefined) {
-          appVersion = payload.version;
-          return;
-        }
-        if (payload.version !== appVersion) updateButton.hidden = false;
-      } catch {
-        return;
-      }
-    }
-
     greetingList.addEventListener("click", async (event) => {
       const button = event.target.closest(".wave");
       if (!button || button.disabled) return;
@@ -754,9 +847,8 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const name = form.elements.name.value.trim();
       const message = form.elements.message.value.trim();
-      if (!name || !message) return;
+      if (!currentAccount || !message) return;
 
       submitButton.disabled = true;
       formStatus.textContent = "Mengirim sapaan...";
@@ -764,13 +856,13 @@
         const response = await fetch("/api/greetings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, message })
+          body: JSON.stringify({ device_id: accountId, message })
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || "Sapaan belum terkirim.");
         await refreshGreetings();
         form.reset();
-        formStatus.textContent = `Sapaanmu sudah sampai, ${name}!`;
+        formStatus.textContent = `Sapaanmu sudah sampai, ${currentAccount.name}!`;
         greetingList.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch {
         formStatus.textContent = "Sapaan belum terkirim. Periksa koneksi ke server lalu coba lagi.";
@@ -798,17 +890,6 @@
       installPrompt = null;
     });
 
-    updateButton.addEventListener("click", async () => {
-      updateButton.disabled = true;
-      const waitingWorker = serviceWorkerRegistration?.waiting;
-      if (waitingWorker) {
-        waitingWorker.postMessage({ type: "ACTIVATE_UPDATE" });
-        window.setTimeout(reloadForUpdate, 1500);
-        return;
-      }
-      reloadForUpdate();
-    });
-
     if ("serviceWorker" in navigator) {
       let hadController = Boolean(navigator.serviceWorker.controller);
       navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -822,27 +903,29 @@
       navigator.serviceWorker.register("/sw.js").then((registration) => {
         serviceWorkerRegistration = registration;
 
-        function showUpdateIfReady() {
-          updateButton.hidden = !(registration.waiting && navigator.serviceWorker.controller);
+        function activateWaitingUpdate() {
+          if (registration.waiting && navigator.serviceWorker.controller) {
+            registration.waiting.postMessage({ type: "ACTIVATE_UPDATE" });
+          }
         }
 
+        activateWaitingUpdate();
         registration.addEventListener("updatefound", () => {
           const installing = registration.installing;
           if (!installing) return;
-          installing.addEventListener("statechange", showUpdateIfReady);
+          installing.addEventListener("statechange", () => {
+            if (installing.state === "installed") activateWaitingUpdate();
+          });
         });
 
-        showUpdateIfReady();
         window.addEventListener("focus", () => registration.update().catch(() => {}));
         window.setInterval(() => registration.update().catch(() => {}), 60_000);
       }).catch(() => {});
     }
 
+    loadCurrentAccount();
     refreshGreetings();
     window.setInterval(refreshGreetings, 5000);
-    checkAppVersion();
-    window.setInterval(checkAppVersion, 60_000);
-    window.addEventListener("focus", checkAppVersion);
   </script>
 </body>
 </html>
