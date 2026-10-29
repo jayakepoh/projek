@@ -1,0 +1,13 @@
+{
+  "name": "OS TV Android",
+  "short_name": "OS TV Android",
+  "description": "Pemutar playlist TV Indonesia dari sumber resmi dan berizin.",
+  "lang": "id",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101a19",
+  "theme_color": "#101a19",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

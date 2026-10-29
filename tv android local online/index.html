@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101a19" />
+    <meta name="description" content="Pemutar TV untuk playlist resmi dan berizin." />
+    <title>OS TV Android</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=2" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navigasi kanal">
+        <a class="brand" href="/" aria-label="OS TV Android beranda">
+          <span class="brand-mark" aria-hidden="true">OS</span>
+          <span class="brand-copy"><strong>OS TV ANDROID</strong><small>RUANG SIARAN</small></span>
+        </a>
+
+        <div class="sidebar-heading"><span>JELAJAHI</span><span id="channel-count">0 kanal</span></div>
+        <nav id="group-list" class="group-list" aria-label="Kategori kanal"></nav>
+        <div class="sidebar-bottom">
+          <div class="source-note"><span class="source-dot"></span><span>Sumber siaran Anda</span></div>
+          <p>Gunakan playlist dari penyedia resmi atau berizin.</p>
+          <button class="sidebar-action" id="manage-sources" type="button">
+            <span aria-hidden="true">＋</span> Kelola playlist
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb"><span>TV INDONESIA</span><span class="breadcrumb-slash">/</span><strong id="current-group">SEMUA KANAL</strong></div>
+          <div class="top-actions">
+            <label class="search-box">
+              <span aria-hidden="true">⌕</span>
+              <input id="search-input" type="search" placeholder="Cari kanal" aria-label="Cari kanal" />
+              <kbd>/</kbd>
+            </label>
+            <button id="install-button" class="install-button" type="button" hidden>
+              <span aria-hidden="true">↓</span><span>Pasang aplikasi</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="viewing-grid" aria-label="Pemutar TV">
+          <div class="player-column">
+            <div class="player-frame" id="player-frame">
+              <video id="video-player" controls playsinline preload="metadata" aria-label="Pemutar siaran" hidden></video>
+              <div id="player-empty" class="player-empty">
+                <div class="broadcast-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+                <p class="eyebrow">SIARAN ANDA, DI SINI</p>
+                <h1>Mulai dari kanal pilihan.</h1>
+                <p class="empty-copy">Impor playlist M3U dari sumber yang Anda miliki untuk mulai menonton.</p>
+                <button class="primary-button" id="empty-import" type="button"><span aria-hidden="true">＋</span> Impor playlist</button>
+              </div>
+              <div id="player-status" class="player-status" role="status" hidden></div>
+              <div class="player-corner-label"><span class="live-dot"></span> LIVE PLAYER</div>
+            </div>
+            <div class="now-playing">
+              <div class="now-channel-icon" id="now-channel-icon">TV</div>
+              <div class="now-copy"><p class="eyebrow">SEDANG DIPUTAR</p><h2 id="now-title">Belum ada kanal dipilih</h2><p id="now-group">Impor playlist untuk memulai</p></div>
+              <div class="now-meta" id="now-meta">OS TV ANDROID <span>•</span> PEMUTAR WEB</div>
+            </div>
+          </div>
+
+          <aside class="guide-panel" aria-label="Panduan kanal">
+            <div class="guide-heading"><div><p class="eyebrow">PANDUAN SIARAN</p><h2>Daftar kanal</h2></div><button class="icon-button" id="guide-import" type="button" aria-label="Impor playlist" title="Impor playlist">＋</button></div>
+            <div class="guide-filters" id="guide-filters" role="tablist" aria-label="Filter kanal">
+              <button class="filter-chip active" type="button" role="tab" aria-selected="true" data-filter="all">Semua</button>
+              <button class="filter-chip" type="button" role="tab" aria-selected="false" data-filter="recent">Terakhir dipilih</button>
+            </div>
+            <div class="channel-list" id="channel-list" aria-live="polite"></div>
+            <div class="guide-footer"><span class="guide-live-dot"></span><span id="guide-footer-text">Menunggu playlist</span></div>
+          </aside>
+        </section>
+
+        <footer class="page-footer"><span>UNTUK KONTEN RESMI DAN BERIZIN</span><span>STREAMING BERGANTUNG PADA SUMBER DAN KONEKSI ANDA</span></footer>
+      </main>
+    </div>
+
+    <dialog id="source-dialog" class="source-dialog">
+      <form method="dialog" class="dialog-header"><div><p class="eyebrow">SUMBER KANAL</p><h2>Tambahkan playlist</h2></div><button class="icon-button close-dialog" value="cancel" aria-label="Tutup">×</button></form>
+      <div class="dialog-body">
+        <label class="field-label" for="playlist-url">URL playlist M3U</label>
+        <div class="url-row"><input id="playlist-url" type="url" placeholder="https://contoh.id/playlist.m3u" /><button id="load-url" class="secondary-button" type="button">Muat URL</button></div>
+        <p class="field-help">URL harus dapat diakses dari browser. Jika gagal karena kebijakan CORS, unduh playlist lalu impor sebagai file.</p>
+        <div class="or-divider"><span>ATAU</span></div>
+        <label class="field-label" for="playlist-file">Pilih file playlist</label>
+        <input id="playlist-file" class="file-input" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl,text/plain" />
+        <label class="field-label paste-label" for="playlist-text">Tempel isi M3U</label>
+        <textarea id="playlist-text" rows="6" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;Berita&quot;,Nama Kanal&#10;https://stream-resmi.example/live.m3u8"></textarea>
+        <button id="load-text" class="primary-button dialog-submit" type="button">Timpa daftar kanal</button>
+        <p id="dialog-error" class="dialog-error" role="alert" hidden></p>
+      </div>
+      <p class="dialog-footnote">Daftar kanal disimpan di perangkat ini. Pastikan Anda berhak mengakses setiap sumber siaran.</p>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+    <script src="/app.js?v=4" defer></script>
+  </body>
+</html>
