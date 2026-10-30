@@ -1,4 +1,4 @@
-const CACHE_NAME = "ping-pong-app-v6";
+const CACHE_NAME = "ping-pong-app-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
