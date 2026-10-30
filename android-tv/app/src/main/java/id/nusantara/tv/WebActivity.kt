@@ -17,7 +17,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.webkit.WebViewAssetLoader
-import androidx.webkit.AssetHelper
 
 class WebActivity : Activity() {
     private lateinit var container: FrameLayout
@@ -47,7 +46,7 @@ class WebActivity : Activity() {
         }
 
         val assetLoader = WebViewAssetLoader.Builder()
-            .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(AssetHelper(this), "www"))
+            .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(androidx.webkit.WebViewAssetLoader.AssetHelper(this), "www"))
             .build()
         webView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(
