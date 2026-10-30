@@ -89,7 +89,7 @@ class MainActivity : Activity() {
             setHintTextColor(Color.rgb(111, 126, 118))
             setTextColor(paper)
             textSize = 14f
-            singleLine = true
+            setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or
                 android.text.InputType.TYPE_TEXT_VARIATION_URI
             imeOptions = EditorInfo.IME_ACTION_GO
