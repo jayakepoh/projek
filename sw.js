@@ -1,49 +1,44 @@
-const CACHE_NAME = "teman-ngopi-v3";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "ping-pong-app-v6";
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./icon.svg",
+  "./three.module.js",
+  "./three.core.js"
+];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
+  );
 });
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "ACTIVATE_UPDATE") {
-    self.skipWaiting();
-  }
+  if (event.data?.type === "SKIP_WAITING") event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter((key) => key.startsWith("teman-ngopi-") && key !== CACHE_NAME)
-        .map((key) => caches.delete(key))
-    ))
+    caches.keys()
+      .then((cacheNames) => Promise.all(
+        cacheNames
+          .filter((cacheName) => cacheName.startsWith("ping-pong-app-") && cacheName !== CACHE_NAME)
+          .map((cacheName) => caches.delete(cacheName))
+      ))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
-  if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
-
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
-        return response;
-      }).catch(() => caches.match("/"))
-    );
-    return;
-  }
+  if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(request).then((response) => {
-      if (response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-      }
-      return response;
-    }).catch(() => caches.match(request))
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+      if (event.request.mode === "navigate") return caches.match("./index.html");
+      return fetch(event.request);
+    })
   );
 });
