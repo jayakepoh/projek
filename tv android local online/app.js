@@ -1,4 +1,5 @@
 const STORAGE_KEY = "nusantara-tv.channels.v1";
+const PLAYLIST_SOURCE_KEY = `${STORAGE_KEY}.source`;
 const channelList = document.querySelector("#channel-list");
 const groupList = document.querySelector("#group-list");
 const searchInput = document.querySelector("#search-input");
@@ -34,6 +35,16 @@ function getGroups() {
 
 function initials(name) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "TV";
+}
+
+function createChannelId() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  if (typeof crypto.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function renderGroups() {
@@ -132,31 +143,9 @@ function playChannel(channel) {
   const isHls = /\.m3u8(?:$|[?#])/i.test(channel.url);
   const localProxy = (url) => `/proxy?url=${encodeURIComponent(url)}`;
   const onLocalhost = ["localhost", "127.0.0.1"].includes(location.hostname);
-  const startXhrHls = (upstreamBase) => {
-    if (hlsInstance) {
-      hlsInstance.destroy();
-      hlsInstance = null;
-    }
-    // Saat manifest diambil lewat proxy lokal, hls.js menyelesaikan segmen
-    // relatif terhadap /proxy (server kita) dan gagal 404; segmen absolut
-    // juga sering diblokir CORS oleh upstream. Opsi `baseUrl` tidak ada di
-    // hls.js — cara resminya lewat xhrSetup (lihat docs/API.md hls.js):
-    // relatif -> tulis ulang ke upstream asli; absolut -> lewat proxy.
-    hlsInstance = new window.Hls({
-      xhrSetup: (xhr, url) => {
-        if (!/^https?:\/\//i.test(url)) {
-          xhr.open("GET", new URL(url, upstreamBase).href, true);
-          return;
-        }
-        if (url !== upstreamBase && !url.startsWith("/proxy?url=")) {
-          xhr.open("GET", `/proxy?url=${encodeURIComponent(url)}`, true);
-        }
-      },
-    });
-    return hlsInstance;
-  };
-  const startHls = (sourceUrl, upstreamBase) => {
-    const hls = upstreamBase ? startXhrHls(upstreamBase) : new window.Hls();
+  const startHls = (sourceUrl, usingProxy = false) => {
+    if (hlsInstance) hlsInstance.destroy();
+    const hls = new window.Hls();
     hlsInstance = hls;
     hls.loadSource(sourceUrl);
     hls.attachMedia(video);
@@ -164,16 +153,16 @@ function playChannel(channel) {
     hls.on(window.Hls.Events.ERROR, (_event, data) => {
       if (!data.fatal) return;
       // Coba sekali lewat proxy lokal bila stream diblokir CORS.
-      if (onLocalhost && upstreamBase === undefined) {
+      if (onLocalhost && !usingProxy) {
         showStatus("Mencoba lewat proxy lokal...");
-        startHls(localProxy(channel.url), channel.url);
+        startHls(localProxy(channel.url), true);
         return;
       }
       showStatus("Siaran tidak dapat dimuat. Periksa URL, koneksi, dan izin akses stream.");
     });
   };
   if (isHls && window.Hls?.isSupported()) {
-    startHls(channel.url);
+    startHls(onLocalhost ? localProxy(channel.url) : channel.url, onLocalhost);
   } else {
     video.src = onLocalhost ? localProxy(channel.url) : channel.url;
     video.play().catch(() => showStatus("Tekan tombol putar. Beberapa stream memerlukan format yang didukung browser."));
@@ -211,7 +200,7 @@ function parseM3U(text, playlistUrl) {
       try {
         const url = new URL(candidate);
         if (["http:", "https:"].includes(url.protocol)) {
-          parsed.push({ id: crypto.randomUUID(), name: pending.name, group: pending.group, url: url.href });
+          parsed.push({ id: createChannelId(), name: pending.name, group: pending.group, url: url.href });
         }
       } catch {
         pending = null;
@@ -232,12 +221,44 @@ function importPlaylist(text, playlistUrl) {
   channels = parsed;
   activeChannel = null;
   saveChannels();
+  localStorage.setItem(PLAYLIST_SOURCE_KEY, "custom");
   selectedGroup = "Semua kanal";
   dialogError.hidden = true;
   document.querySelector("#current-group").textContent = "SEMUA KANAL";
   dialog.close();
   renderGroups();
   renderChannels();
+}
+
+async function loadDefaultPlaylist() {
+  if (localStorage.getItem(PLAYLIST_SOURCE_KEY) === "custom") return;
+  try {
+    const response = await fetch("/channels-clean.m3u");
+    if (!response.ok) return;
+    const playlistUrl = new URL("/channels-clean.m3u", location.href).href;
+    const parsed = parseM3U(await response.text(), playlistUrl);
+    if (!parsed.length) return;
+    const bundledUrls = new Set(parsed.map((channel) => channel.url));
+    if (channels.length && !channels.every((channel) => bundledUrls.has(channel.url))) {
+      localStorage.setItem(PLAYLIST_SOURCE_KEY, "custom");
+      return;
+    }
+    const currentUrls = new Set(channels.map((channel) => channel.url));
+    const currentNames = new Set(channels.map((channel) => channel.name.trim().replace(/\s+/g, " ").toLocaleLowerCase("id")));
+    const additions = parsed.filter((channel) => {
+      const name = channel.name.trim().replace(/\s+/g, " ").toLocaleLowerCase("id");
+      if (currentUrls.has(channel.url) || currentNames.has(name)) return false;
+      currentUrls.add(channel.url);
+      currentNames.add(name);
+      return true;
+    });
+    localStorage.setItem(PLAYLIST_SOURCE_KEY, "default");
+    if (!additions.length) return;
+    channels = [...channels, ...additions];
+    saveChannels();
+    renderGroups();
+    renderChannels();
+  } catch {}
 }
 
 function openDialog() {
@@ -313,3 +334,4 @@ video.addEventListener("error", () => {
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
 renderGroups();
 renderChannels();
+loadDefaultPlaylist();

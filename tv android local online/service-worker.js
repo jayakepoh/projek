@@ -1,6 +1,6 @@
 // Naikkan versi cache setiap kali app.js/styles berubah agar SW mengambil yang baru.
-const CACHE_NAME = "nusantara-tv-shell-v4";
-const APP_SHELL = ["/", "/index.html", "/styles.css?v=2", "/app.js?v=4", "/manifest.webmanifest", "/icon.svg"];
+const CACHE_NAME = "nusantara-tv-shell-v8";
+const APP_SHELL = ["/", "/index.html", "/styles.css?v=2", "/app.js?v=7", "/manifest.webmanifest", "/icon.svg", "/channels-clean.m3u"];
 // hls.js dimuat dari CDN, tidak masuk app shell.
 
 self.addEventListener("install", (event) => {

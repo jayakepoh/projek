@@ -2,6 +2,7 @@ package id.nusantara.tv
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -49,10 +50,13 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.decorView.systemUiVisibility =
-            (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+        window.statusBarColor = ink
+        window.navigationBarColor = ink
+        if (packageManager.hasSystemFeature("android.software.leanback")) {
+            window.decorView.systemUiVisibility =
+                (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+        }
         player = ExoPlayer.Builder(this).build()
         buildScreen()
         playlistUrl.setText(getPreferences(MODE_PRIVATE).getString("playlist_url", ""))
@@ -60,21 +64,21 @@ class MainActivity : Activity() {
     }
 
     private fun buildScreen() {
+        val compact = resources.configuration.screenWidthDp < 600
         val root = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = if (compact) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
             setBackgroundColor(ink)
             isFocusableInTouchMode = true
         }
         val sidebar = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(26), dp(24), dp(22), dp(22))
+            setPadding(dp(if (compact) 16 else 26), dp(if (compact) 16 else 24), dp(if (compact) 16 else 22), dp(18))
             setBackgroundColor(Color.rgb(19, 30, 28))
         }
-        root.addView(sidebar, LinearLayout.LayoutParams(dp(350), LinearLayout.LayoutParams.MATCH_PARENT))
 
         sidebar.addView(label("OS TV ANDROID", 22, lime, true))
-        sidebar.addView(label("PEMUTAR ANDROID TV", 12, muted, false).apply {
-            setPadding(0, dp(5), 0, dp(26))
+        sidebar.addView(label(if (compact) "PEMUTAR TV" else "PEMUTAR ANDROID TV", 12, muted, false).apply {
+            setPadding(0, dp(5), 0, dp(if (compact) 14 else 26))
         })
         sidebar.addView(label("PLAYLIST RESMI / BERIZIN", 11, paper, true).apply {
             setPadding(0, 0, 0, dp(8))
@@ -127,12 +131,23 @@ class MainActivity : Activity() {
         ))
 
         val viewingArea = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
-        root.addView(viewingArea, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
+        if (compact) {
+            root.addView(viewingArea, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(220)
+            ))
+            root.addView(sidebar, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            ))
+        } else {
+            root.addView(sidebar, LinearLayout.LayoutParams(dp(350), LinearLayout.LayoutParams.MATCH_PARENT))
+            root.addView(viewingArea, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
+        }
+        if (::playerView.isInitialized) playerView.player = null
         playerView = PlayerView(this).apply {
             player = this@MainActivity.player
             useController = true
             resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            visibility = View.GONE
+            visibility = if (this@MainActivity.player.mediaItemCount > 0) View.VISIBLE else View.GONE
         }
         viewingArea.addView(playerView, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
@@ -142,10 +157,20 @@ class MainActivity : Activity() {
             textAlignment = View.TEXT_ALIGNMENT_CENTER
             setPadding(dp(30), dp(30), dp(30), dp(30))
         }
+        emptyState.visibility = if (player.mediaItemCount > 0) View.GONE else View.VISIBLE
         viewingArea.addView(emptyState, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
         ))
         setContentView(root)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val savedAddress = playlistUrl.text.toString()
+        playerView.player = null
+        buildScreen()
+        playlistUrl.setText(savedAddress)
+        renderChannels()
     }
 
     private fun loadPlaylist() {
@@ -299,6 +324,7 @@ class MainActivity : Activity() {
 
     private fun playChannel(channel: TvChannel) {
         selectedChannel = channel
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val item = MediaItem.Builder()
             .setUri(channel.streamUrl)
             .apply {
@@ -353,6 +379,7 @@ class MainActivity : Activity() {
 
     override fun onStop() {
         player.pause()
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         super.onStop()
     }
 

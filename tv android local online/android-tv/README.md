@@ -1,13 +1,13 @@
 # OS TV Android
 
-Aplikasi native Android TV untuk remote D-pad, playlist M3U, dan pemutaran HLS. Tidak ada daftar kanal atau URL stream yang dibundel. Gunakan playlist resmi/berizin; aplikasi hanya menerima URL playlist dan stream HTTPS.
+Aplikasi native Android untuk ponsel dan Android TV, dengan playlist M3U dan pemutaran HLS. Layout menyesuaikan ukuran layar, mendukung sentuhan dan remote D-pad, dan tidak membundel kanal atau URL stream. Gunakan playlist resmi/berizin; aplikasi hanya menerima URL playlist dan stream HTTPS.
 
 ## Build APK
 
 1. Pasang Android Studio versi terbaru, Android SDK Platform 35, dan JDK 17.
 2. Buka folder `android-tv` di Android Studio dan tunggu Gradle Sync mengunduh plugin serta Media3.
 3. Pilih **Build > Build APK(s)**. APK debug akan berada di `app/build/outputs/apk/debug/`.
-4. Pasang APK ke perangkat Android TV/emulator. Aplikasi muncul pada launcher kategori TV.
+4. Pasang APK debug dari `app/build/outputs/apk/debug/` ke ponsel Android atau Android TV. Untuk ponsel, pindahkan APK ke perangkat lalu buka file tersebut dan izinkan pemasangan dari sumber ini bila diminta. APK debug cocok untuk uji coba/sideload, bukan publikasi Play Store.
 
 ## Penggunaan
 

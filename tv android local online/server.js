@@ -2,6 +2,32 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 
+function proxyUrl(targetUrl) {
+  return `/proxy?url=${encodeURIComponent(targetUrl)}`;
+}
+
+function rewriteManifest(text, baseUrl) {
+  const rewriteUri = (uri) => {
+    try {
+      const resolved = new URL(uri, baseUrl);
+      if (!["http:", "https:"].includes(resolved.protocol)) return uri;
+      return proxyUrl(resolved.href);
+    } catch {
+      return uri;
+    }
+  };
+
+  return text.split(/\r?\n/).map((line) => {
+    if (!line.trim()) return line;
+    if (line.trimStart().startsWith("#")) {
+      return line.replace(/(\bURI=")([^"]+)(")/gi, (_match, prefix, uri, suffix) => `${prefix}${rewriteUri(uri)}${suffix}`);
+    }
+    const leading = line.match(/^\s*/)[0];
+    const trailing = line.match(/\s*$/)[0];
+    return `${leading}${rewriteUri(line.trim())}${trailing}`;
+  }).join("\n");
+}
+
 function proxyStream(targetUrl, request, response) {
   let parsed;
   try {
@@ -24,11 +50,29 @@ function proxyStream(targetUrl, request, response) {
     const headers = { "Access-Control-Allow-Origin": "*" };
     for (const header of ["content-type", "content-length", "content-range", "accept-ranges"])
       if (upstreamResponse.headers[header]) headers[header] = upstreamResponse.headers[header];
+
+    const contentType = upstreamResponse.headers["content-type"] || "";
+    const isManifest = /\.m3u8$/i.test(parsed.pathname) || /mpegurl/i.test(contentType);
+    if (isManifest) {
+      const chunks = [];
+      upstreamResponse.on("data", (chunk) => chunks.push(chunk));
+      upstreamResponse.on("end", () => {
+        const body = rewriteManifest(Buffer.concat(chunks).toString("utf8"), parsed.href);
+        delete headers["content-length"];
+        response.writeHead(upstreamResponse.statusCode, headers);
+        response.end(body);
+      });
+      return;
+    }
+
     response.writeHead(upstreamResponse.statusCode, headers);
     upstreamResponse.pipe(response);
   });
-  request.on("close", () => upstream.destroy());
+  request.on("aborted", () => upstream.destroy());
   request.on("error", () => upstream.destroy());
+  response.on("close", () => {
+    if (!response.writableEnded) upstream.destroy();
+  });
   response.on("error", () => upstream.destroy());
   upstream.on("error", () => {
     if (!response.headersSent) response.writeHead(502, { "Access-Control-Allow-Origin": "*" });

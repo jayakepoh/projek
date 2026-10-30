@@ -6,8 +6,15 @@ export default async function run(page) {
     return { status: res.status, body: await res.text() };
   }, base);
   if (manifest.status !== 200) return { manifest };
-  const segLine = manifest.body.split(/\r?\n/).find(l => l.endsWith('.ts'));
-  const segUrl = new URL(segLine, base).href;
+  const segLine = manifest.body.split(/\r?\n/).find((line) => {
+    const sourceUrl = line.startsWith('/proxy?url=')
+      ? new URL(line, page.url()).searchParams.get('url')
+      : line;
+    return /\.ts(?:$|[?#])/i.test(sourceUrl || '');
+  });
+  const segUrl = segLine.startsWith('/proxy?url=')
+    ? new URL(segLine, page.url()).searchParams.get('url')
+    : new URL(segLine, base).href;
   const seg = await page.evaluate(async (u) => {
     try {
       const res = await fetch('/proxy?url=' + encodeURIComponent(u));
