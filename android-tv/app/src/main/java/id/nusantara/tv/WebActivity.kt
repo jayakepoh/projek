@@ -46,7 +46,7 @@ class WebActivity : Activity() {
         }
 
         val assetLoader = WebViewAssetLoader.Builder()
-            .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(this, "www"))
+            .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(this@WebActivity, "www"))
             .build()
         webView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(
