@@ -1,0 +1,175 @@
+﻿General	AFBTV Kupang	https://afbtv.siar.us/live/afbtv.m3u8
+Religious	Ahsan TV	https://5bf7b725107e5.streamlock.net/ahsantv/ahsantv/playlist.m3u8
+General	Ajwa TV	http://ikitv.sqn.at:8000/play/a00j/index.m3u8
+General	AKTV	https://akativi.siar.us/live/akativi.m3u8
+Religious	Al Wafa Tarim	https://ammedia.siar.us/ammedia/live/playlist.m3u8
+Religious	Al-Bahjah TV	http://202.150.161.117:8000/play/AlBahjahTV
+Religious	Al-Iman TV (Indonesia)	https://tv.aliman.id/aliman/live.m3u8
+Religious	Angel TV Indonesia	https://janya-digimix.akamaized.net/vglive-sk-234616/indonesia/ngrp:angelindonesia_all/playlist.m3u8
+General	ANTV (Indonesia)	http://103.58.160.157:8278/720-ANTV/playlist.m3u8
+Religious	Ashiil TV	https://wahyu1ptv.pages.dev/AshiilTV-HD.m3u8
+Undefined	Astha TV	https://hgmtv.com:2020/hls/asthalive/asthalive.m3u8
+General	Astro Blitar TV	https://5bf7b725107e5.streamlock.net/abtv/abtv/playlist.m3u8
+Undefined	Atambua TV	http://122.248.43.242:1935/ATAMBUATV/_definst_/myStream/playlist.m3u8
+General	Balikpapan TV	http://122.248.43.242:1935/BALIKPAPANTV/_definst_/myStream/playlist.m3u8
+General	Bandung TV	http://202.150.153.254:65500/bandungtvWEBSITE.m3u8
+Undefined	Banjar TV	https://banjartv.siar.us/banjartv/live/playlist.m3u8
+Undefined	Banten TV	https://5bf7b725107e5.streamlock.net/bantentv/bantentv/playlist.m3u8
+General	Batam TV	http://122.248.43.242:1935/BATAMTV/_definst_/myStream/playlist.m3u8
+News	BeritaSatu	https://xtdslboppkkv-pull.bpmedialive.com/live/beritasatu/abr.m3u8
+Undefined	Biznet Adventure	http://livestream.biznetvideo.net/biznet_adventure/smil:adventure.smil/playlist.m3u8
+Kids	Biznet Kids	http://livestream.biznetvideo.net/biznet_kids/smil:kids.smil/index.m3u8
+Lifestyle	Biznet Lifestyle	http://livestream.biznetvideo.net/biznet_lifestyle/smil:lifestyle.smil/index.m3u8
+Undefined	BMS TV	https://5bf7b725107e5.streamlock.net/bmstv/bmstv/playlist.m3u8
+News	BN Channel	http://ikitv.sqn.at:8000/play/a01l/index.m3u8
+Undefined	BRTV (Indonesia)	https://5bf7b725107e5.streamlock.net/brtv/brtv/playlist.m3u8
+News	BTV (Indonesia)	https://lnd0t3b922.tenbytecdn.com/ta-sg1/90369cf5-6ac2-411d-b3d0-15fae10a2e2c/master.m3u8
+General	Bungo TV	https://5bf7b725107e5.streamlock.net/bungotv/bungotv/playlist.m3u8
+Undefined	Caruban TV	https://stream.carubantv.id/hls/0/stream.m3u8
+General	Celebes TV	https://ams.juraganstreaming.com:5443/LiveApp/streams/celebesmedia.m3u8
+Undefined	Channel Jowo	https://op-group1-swiftservehd-1.dens.tv/h/h77/index.m3u8
+Business	CNBC Indonesia	https://video.detik.com/livecnbc/smil:cnbctv/chunklist_w1279679883_b384000_sleng.m3u8
+News	CNN Indonesia	https://video.detik.com/livecnn/smil:cnntv/chunklist_w268557525_b384000_sleng.m3u8
+Religious	DAAI TV	https://pull.daaiplus.com/live-DAAIPLUS/live-DAAIPLUS_HD.m3u8
+Undefined	Davika TV	https://5bf7b725107e5.streamlock.net/davika/davika/playlist.m3u8
+Cooking	Dens Food Channel	https://op-flashcon-digdayahd-1.dens.tv/h/h221/02.m3u8
+Education	Dens Knowledge	https://op-group1-swiftservehd-1.dens.tv/h/h236/index.m3u8
+Lifestyle	Dens Life & Style	https://op-group1-swiftservehd-1.dens.tv/h/h222/index.m3u8
+Lifestyle	Dens Play	https://op-group1-swiftservehd-1.dens.tv/h/h225/index.m3u8
+Entertainment	Dens ShowBiz	https://op-group1-swiftservehd-1.dens.tv/h/h203/index.m3u8
+Religious	Dhamma TV	https://b.webcache.maxindo.net.id/dhamma/dhamma.m3u8
+General	Dhoho TV	https://dhohotv.siar.us/dhohotv/live/playlist.m3u8
+Religious	DMI TV (576i)	https://tvstreamcast.com/tawaftv.m3u8
+General	dTVi	https://e.siar.us/live/dtvi.m3u8
+General	Duta TV	https://dutatv.siar.us/dutatv/live/playlist.m3u8
+General	Efarina TV	https://live.efarinatv.com/hls/bgtaufikganteng.m3u8
+Religious	Fajar TV	http://122.248.43.242:1935/FAJARTV/_definst_/myStream/playlist.m3u8
+Entertainment	Ficom Channel	https://v3.siar.us/ficomchannel/live/playlist.m3u8
+General	FTV (Taiwan)	http://seb.sason.top/ptv/ftv.php?id=ms
+General	Garuda TV	https://hgmtv.com:19360/garudatvlivestreaming/garudatvlivestreaming.m3u8
+General	Groovia Kanal	https://gist.githubusercontent.com/iptvonlinetv/02d209207082846012c15305f7471c55/raw/4439b54b986e696e6fcfba7a53380d85b27bbbc1/udp450.500.723:6050.m3u8
+Kids	Groovia Kids	https://gist.githubusercontent.com/iptvonlinetv/244b66c61f162a7c0c2b4fa59b528139/raw/2376b7ba1989ebbd383301ec7d645e222a6c9338/udp780.510.345:4545.m3u8
+General	GTV (Indonesia) HD	http://202.150.172.59/GTVHD/index.m3u8
+News	Huma Betang TV	https://v3.siar.us/humabetangtv/live/playlist.m3u8
+Religious	I Am Channel	https://61146e7ab7a66.streamlock.net:8089/tes/1/chunklist.m3u8
+Entertainment	Indonesiana.TV	https://tvstreamcast.com/indonesiana.m3u8
+General	Indosiar HD	http://202.150.172.59/Indosiar/index.m3u8
+Undefined	Jak TV	https://op-group1-swiftservesd-1.dens.tv/s/s123/index2.m3u8
+General	Jambi TV	https://jambitv.globaldigitalcore.com/hls/sah5tu7Eiveepohyieyie3OoteL2anga.m3u8
+General	Jawa Pos TV Jakarta	http://122.248.43.242:1935/JAWAPOSTVJKT/_definst_/myStream/playlist.m3u8
+General	Jek TV	http://27.124.81.245:1935/jektv/myStream/playlist.m3u8
+General	Jogja Istimewa TV	http://103.255.15.222:1935/tv/jitv_720p/playlist.m3u8
+General	Jogja TV	https://stream.jogjatv.co.id/jtvlive/stream/index.m3u8
+General	JTV	http://122.248.43.242:1935/JTVSURABAYA/_definst_/myStream/playlist.m3u8
+General	JTV Kediri	http://122.248.43.242:1935/JTVKEDIRI/_definst_/myStream/playlist.m3u8
+General	JTV Madiun	http://122.248.43.242:1935/JTVMADIUN/_definst_/myStream/playlist.m3u8
+General	JTV Madura	http://122.248.43.242:1935/JTVMADURA/_definst_/myStream/playlist.m3u8
+General	JTV Malang	http://122.248.43.242:1935/JTVMALANG/_definst_/myStream/playlist.m3u8
+General	Kawanua TV	http://122.248.43.242:1935/KAWANUATV/_definst_/myStream/playlist.m3u8
+Kids	Kids TV	http://origin5.mediacdn.ru/live/kidstv/index.m3u8
+General	Kilisuci TV	https://5bf7b725107e5.streamlock.net/kstv/kstv/playlist.m3u8
+News	Kompas TV	https://op-group1-swiftservehd-1.dens.tv/h/h234/index.m3u8
+General	KTV (Indonesia)	https://flv.intechmedia.net/live/ch118.m3u8
+Music;News;Religious	Lingkar TV	https://lingkartv.my.id/hls/lingkartv.m3u8
+Religious	Madani TV	https://stream.asianastream.com/madani/madanitv.smil/playlist.m3u8
+General	Madu TV	https://re1.siar.us/madutv/hd720/playlist.m3u8
+General	Magna Channel	http://202.150.172.59/MagnaChannel/index.m3u8
+Undefined	Matrix TV Yogyakarta	https://stream.matrixtv.id/hls/0/stream.m3u8
+Legislative	MBG TV	https://stream.convergen.co/mbg_stream/smil:mbStream.smil/playlist.m3u8
+Undefined	MDTV	https://wahyu1ptv.pages.dev/MDTV-HD.m3u8
+News	Metro TV (Indonesia)	https://edge.medcom.id/live-edge/smil:metro.smil/playlist.m3u8
+Religious	MGI TV	https://tv.rodja.live/tasik/ngrp:mgitv_all/playlist.m3u8
+General	MGSTV	https://mgstv.siar.us/live/mgstv.m3u8
+General	Moji	https://op-group1-swiftservehd-1.dens.tv/h/h207/index.m3u8
+Religious	MQTV	https://5bf7b725107e5.streamlock.net/mqtv/mqtv/playlist.m3u8
+Music	Music Information Channel	https://mic.siar.us/mic/live/mic.m3u8
+Movies	My Cinema	https://op-group1-swiftservehd-1.dens.tv/h/h192/index.m3u8
+Family	My Family	https://op-group1-swiftservehd-1.dens.tv/h/h194/index.m3u8
+Kids	My Kidz	https://cdn10jtedge.indihometv.com/atm/DASH/mykids/manifest.mpd
+Religious	Naajiya TV	https://www.naajiyatv.com/live/livestream.m3u8
+Religious	Nabawi TV	http://202.150.161.117:8000/play/NabawiTV
+General	Nusantara TV	https://nusantaratv.siar.us/nusantaratv/live/playlist.m3u8
+Culture;General;Music;News	Online TV Nusantara	https://5bf7b725107e5.streamlock.net/onlinetvnusantara/onlinetvnusantara/playlist.m3u8
+General	Padang TV	http://122.248.43.242:1935/PADANGTV/_definst_/myStream/playlist.m3u8
+Undefined	PKTV	https://streaming.id18.tunnel.my.id/hls/stream.m3u8
+Undefined	PONTV	http://122.248.43.242:1935/PONTV/_definst_/myStream/playlist.m3u8
+Undefined	Puja TV Aceh	https://pujatv.siar.us/live/pujatv.m3u8
+Undefined	Radar Lampung TV	https://www.streaming.radartv.co.id/hls/test.m3u8
+Undefined	Radar Tasikmalaya TV	https://v2.siar.us/radartasikmalaya/live/playlist.m3u8
+General	RBTV Jogja	https://official.rbtvjogja.tv/live/mychannel.m3u8
+General	RCTI HD	http://202.150.172.59/RCTIHD/index.m3u8
+Undefined	RCTV (Indonesia)	https://v10.siar.us/rctv/live/playlist.m3u8
+Undefined	Riau TV	http://122.248.43.242:1935/RIAUTV/_definst_/myStream/playlist.m3u8
+Education	Rinjani TV	https://rinjanitv.cloud/hls/tvkabel.m3u8
+Undefined	Rodja TV	https://rodjatv.com/rodjatv/live.m3u8
+Undefined	RRI Net	https://private-streaming.rri.go.id/memfs/6f77c7b5-feb2-4935-9f89-e7e9fca0a54a_output_0.m3u8
+News	RTM ASEAN	https://d25tgymtnqzu8s.cloudfront.net/event/smil:event1/chunklist_b2596000_slENG.m3u8
+Undefined	Salam TV	https://live.salamtelevisi.com/hls/0/stream.m3u8
+Culture;Lifestyle	Salira TV	https://live.salira.tv/p/3870/hybrid/play.m3u8
+General	Sampit TV	https://sampit-tv.siar.us/live/sampit-tv.m3u8
+Undefined	Sangaji TV	https://cdn.adyadigitalteknologi.com:8090/vod/relay.m3u8
+General	SCTV	http://202.150.172.59/SCTV/tracks-v1a1/mono.m3u8
+Undefined	Selaparang TV	https://selaparangtv.siar.us/live/selaparangtv.m3u8
+Undefined	Semarang TV	http://116.254.112.74/hls/cakralive.m3u8
+Undefined	Simpang5 TV	http://122.248.43.242:1935/SIMPANG5TV/_definst_/myStream/playlist.m3u8
+Undefined	SMTV	https://e.siar.us/live/smtv.m3u8
+Undefined	Sriwijaya TV	https://sriwijayatv.siar.us/live/sriwijayatv.m3u8
+Undefined	Stara TV	https://stream.staratv.id/hls/0/stream.m3u8
+Undefined	Stara TV Bandung	https://bandung.staratv.id/hls/0/stream.m3u8
+Undefined	Stara TV Bojonegoro	https://bojonegoro.staratv.id/hls/stream.m3u8
+Undefined	Stara TV Cianjur	https://cianjur.staratv.id/hls/0/stream.m3u8
+Undefined	Stara TV Jakarta	https://jakarta.staratv.id/hls/0/stream.m3u8
+Undefined	Stara TV Malang	https://malang.staratv.id/hls/0/stream.m3u8
+Undefined	Stara TV Parahyangan	https://parahyangan.staratv.id/hls/0/stream.m3u8
+Undefined	STV (Indonesia)	http://122.248.43.242:1935/SAMARINDATV/_definst_/myStream/playlist.m3u8
+Interactive;News	Suara Surabaya Visual Radio	https://ssfm.siar.us/ssfm/live/playlist.m3u8
+Undefined	Sultra TV	http://122.248.43.242:1935/SULTRATV/_definst_/myStream/playlist.m3u8
+Undefined	Surau TV	http://ikitv.sqn.at:8000/play/a00l/index.m3u8
+Undefined	TATV	https://v2.siar.us/tatv/live.sdp/playlist.m3u8
+Undefined	Tegar TV Lampung	http://wms.klikhost.com:1935/tegartv/tegartv/playlist.m3u8
+Culture;Education	The Indonesia Channel	https://restreamer.indonusa.id:8443/d5f4ad43-1b5a-4b0f-8bef-5b37224ed221.m3u8
+Undefined	TV 9 Nusantara	https://5bf7b725107e5.streamlock.net/tv9/tv9/playlist.m3u8
+Undefined	TV Mu	https://e.siar.us/live/tvmu.m3u8
+Undefined	TV Tabalong	https://5bf7b725107e5.streamlock.net/tvtabalong/tvtabalong/playlist.m3u8
+Undefined	TVKU	https://tvku.tv/hlsstream/hls/live.m3u8
+Undefined	tvOne	https://op-group1-swiftservehd-1.dens.tv/h/h40/index.m3u8
+Legislative	TVR Parlemen	http://103.18.181.69:1935/golive/livestream/playlist.m3u8
+General	TVRI	https://op-group1-swiftservesd-1.dens.tv/s/s11/index.m3u8
+General	TVRI Aceh	https://ott-balancer.tvri.go.id/live/eds/Aceh/hls/Aceh.m3u8
+General	TVRI Bali	https://ott-balancer.tvri.go.id/live/eds/Bali/hls/Bali.m3u8
+General	TVRI Bangka Belitung	https://ott-balancer.tvri.go.id/live/eds/Babel/hls/Babel.m3u8
+General	TVRI Bengkulu	https://ott-balancer.tvri.go.id/live/eds/Bengkulu/hls/Bengkulu.m3u8
+General	TVRI Central Java	https://ott-balancer.tvri.go.id/live/eds/Jateng/hls/Jateng.m3u8
+General	TVRI Central Kalimantan	https://ott-balancer.tvri.go.id/live/eds/Kalteng/hls/Kalteng.m3u8
+General	TVRI Central Sulawesi	https://ott-balancer.tvri.go.id/live/eds/Sulteng/hls/Sulteng.m3u8
+General	TVRI East Java	https://ott-balancer.tvri.go.id/live/eds/Jatim/hls/Jatim.m3u8
+General	TVRI East Kalimantan	https://ott-balancer.tvri.go.id/live/eds/Kaltim/hls/Kaltim.m3u8
+General	TVRI East Nusa Tenggara	https://ott-balancer.tvri.go.id/live/eds/NTT/hls/NTT.m3u8
+General	TVRI Gorontalo	https://ott-balancer.tvri.go.id/live/eds/Gorontalo/hls/Gorontalo.m3u8
+General	TVRI HD (1080i)	https://ott-balancer.tvri.go.id/live/eds/Nasional/hls/Nasional.m3u8
+General	TVRI Jakarta (576i)	https://ott-balancer.tvri.go.id/live/eds/DKI/hls/DKI.m3u8
+General	TVRI Jambi	https://ott-balancer.tvri.go.id/live/eds/Jambi/hls/Jambi.m3u8
+General	TVRI Lampung	https://ott-balancer.tvri.go.id/live/eds/Lampung/hls/Lampung.m3u8
+General	TVRI Maluku	https://ott-balancer.tvri.go.id/live/eds/Ambon/hls/Ambon.m3u8
+General	TVRI North Sulawesi	https://ott-balancer.tvri.go.id/live/eds/Sulut/hls/Sulut.m3u8
+General	TVRI North Sumatra	https://ott-balancer.tvri.go.id/live/eds/Sumut/hls/Sumut.m3u8
+General	TVRI Papua	https://ott-balancer.tvri.go.id/live/eds/Papua/hls/Papua.m3u8
+General	TVRI Riau	https://ott-balancer.tvri.go.id/live/eds/Riau/hls/Riau.m3u8
+General	TVRI South Kalimantan	https://ott-balancer.tvri.go.id/live/eds/Kalsel/hls/Kalsel.m3u8
+General	TVRI South Sulawesi	https://ott-balancer.tvri.go.id/live/eds/Sulsel/hls/Sulsel.m3u8
+General	TVRI South Sumatra	https://ott-balancer.tvri.go.id/live/eds/Sumsel/hls/Sumsel.m3u8
+General	TVRI Southeast Sulawesi	https://ott-balancer.tvri.go.id/live/eds/Sultra/hls/Sultra.m3u8
+General	TVRI West Java	https://ott-balancer.tvri.go.id/live/eds/Jabar/hls/Jabar.m3u8
+General	TVRI West Kalimantan	https://ott-balancer.tvri.go.id/live/eds/Kalbar/hls/Kalbar.m3u8
+General	TVRI West Nusa Tenggara	https://ott-balancer.tvri.go.id/live/eds/NTB/hls/NTB.m3u8
+General	TVRI West Papua	https://ott-balancer.tvri.go.id/live/eds/Pabar/hls/Pabar.m3u8
+General	TVRI West Sulawesi	https://ott-balancer.tvri.go.id/live/eds/Sulbar/hls/Sulbar.m3u8
+General	TVRI West Sumatra	https://ott-balancer.tvri.go.id/live/eds/Sumbar/hls/Sumbar.m3u8
+General	TVRI Yogyakarta	https://ott-balancer.tvri.go.id/live/eds/Jogjakarta/hls/Jogjakarta.m3u8
+Sports	TVRI Sport	http://202.150.172.59/TVRISport/index.m3u8
+Undefined	TVRI World	https://ott-balancer.tvri.go.id/live/eds/TVRIWorld/hls/TVRIWorld.m3u8
+Undefined	U Channel	https://srs.u-channel.tv/live/uchannel-tv.m3u8
+Undefined	UGTV	https://cdn.gunadarma.ac.id/streams/ugtv/ingestugtv.m3u8
+Undefined	USM TV	https://play.fsa-stream.my.id/hls/siaran.m3u8
+Kids	VTV (Indonesia)	https://flv.intechmedia.net/live/ch107.m3u8
+Kids	VTV (Indonesia) HD	http://ikitv.sqn.at:8000/play/a023/index.m3u8

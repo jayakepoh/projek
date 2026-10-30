@@ -1,0 +1,9 @@
+{
+  "name": "os-tv-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PWA pemutar playlist TV Indonesia dari sumber resmi atau berizin.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

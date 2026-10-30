@@ -1,0 +1,13 @@
+# Android / IntelliJ
+*.iml
+.idea/
+.gradle/
+local.properties
+build/
+captures/
+
+# QA dan skrip lokal (opsional, tidak ikut ke repo)
+qa-*.mjs
+
+# Node
+node_modules/
