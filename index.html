@@ -520,11 +520,6 @@
         if (playerWon) {
           playerScore += 1;
           playerScoreLabel.textContent = playerScore;
-          if (playerScore > bestScore) {
-            bestScore = playerScore;
-            bestScoreLabel.textContent = bestScore;
-            localStorage.setItem("pingpong-best", String(bestScore));
-          }
         } else {
           computerScore += 1;
           computerScoreLabel.textContent = computerScore;
