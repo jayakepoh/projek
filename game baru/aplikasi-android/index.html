@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bintang Jatuh — Game Tangkap Bintang</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#1b2350">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: linear-gradient(180deg,#0b0f2a 0%,#1b2350 55%,#2a2f6b 100%);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; touch-action:none;
+  }
+  #wrap { position:relative; box-shadow:0 0 60px rgba(90,120,255,.35); border-radius:16px; overflow:hidden; }
+  canvas { display:block; }
+  #overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(8,10,30,.72); color:#fff; text-align:center; backdrop-filter:blur(4px); z-index:5;
+  }
+  #overlay.hidden { display:none; }
+  h1 {
+    font-size:52px; letter-spacing:2px;
+    background:linear-gradient(90deg,#ffd76a,#ff9a5a,#7ecbff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 30px rgba(255,200,100,.25); margin-bottom:8px;
+  }
+  #overlay p { color:#cfd8ff; font-size:16px; max-width:320px; line-height:1.5; }
+  #btn {
+    margin-top:24px; padding:14px 42px; font-size:20px; font-weight:700; color:#1b2350;
+    background:linear-gradient(90deg,#ffd76a,#ff9a5a); border:none; border-radius:40px;
+    cursor:pointer; box-shadow:0 6px 24px rgba(255,170,80,.45); transition:transform .15s;
+  }
+  #btn:hover { transform:scale(1.07); }
+  #best { margin-top:14px; color:#9fb0ff; font-size:14px; }
+  #legend { margin-top:18px; font-size:13px; color:#aab6e8; line-height:1.8; }
+  #install {
+    display:none; margin-top:16px; padding:10px 26px; font-size:15px; font-weight:600;
+    color:#fff; background:linear-gradient(90deg,#5a8cff,#7ecbff); border:none; border-radius:30px;
+    cursor:pointer; box-shadow:0 4px 16px rgba(90,140,255,.4);
+  }
+  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div id="overlay">
+    <h1>⭐ BINTANG JATUH</h1>
+    <p>Gerakkan keranjang untuk menangkap bintang! Hati-hati dengan bom 💣 dan asteroid ☄️</p>
+    <button id="btn">MULAI</button>
+    <div id="best">Skor terbaik: <span id="bestVal">0</span></div>
+  <button id="install">📲 Pasang sebagai Aplikasi</button>
+    <div id="legend">
+      <span class="dot" style="background:#ffd76a"></span>Bintang +10 &nbsp;
+      <span class="dot" style="background:#7ef7c8"></span>Permata +30 &nbsp;
+      <span class="dot" style="background:#ff5a6e"></span>Bom -1 nyawa<br>
+      <span class="dot" style="background:#8be9fd"></span>Jam ⏱ Slow-mo &nbsp;
+      <span class="dot" style="background:#c88bff"></span>Liver ❤ +1 nyawa
+    </div>
+  </div>
+</div>
+<script>
+const cvs = document.getElementById('c'), ctx = cvs.getContext('2d');
+const W = 480, H = 720;
+cvs.width = W; cvs.height = H;
+cvs.style.width = Math.min(W, window.innerWidth - 20) + 'px';
+
+const overlay = document.getElementById('overlay');
+const btn = document.getElementById('btn');
+const bestVal = document.getElementById('bestVal');
+
+// ============ EFEK SUARA (Web Audio, tanpa file) ============
+let actx = null;
+function audio() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
+function tone(freq, dur, type = 'sine', vol = .18, slideTo = null) {
+  const a = audio(), o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, a.currentTime);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, a.currentTime + dur);
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, a.currentTime + dur);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + dur);
+}
+function noise(dur, vol = .25) {
+  const a = audio(), len = a.sampleRate * dur, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+  const src = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter();
+  f.type = 'lowpass'; f.frequency.value = 900;
+  src.buffer = buf; g.gain.value = vol;
+  src.connect(f).connect(g).connect(a.destination); src.start();
+}
+const SFX = {
+  star: c => tone(520 + Math.min(c,15)*35, .12, 'sine', .2),
+  gem: () => { tone(760, .1, 'triangle', .2); setTimeout(() => tone(1140, .14, 'triangle', .18), 70); },
+  bomb: () => { noise(.4, .3); tone(120, .35, 'sawtooth', .25, 40); },
+  rock: () => { noise(.2, .18); tone(160, .2, 'square', .12, 80); },
+  heart: () => { tone(660, .12, 'sine', .2); setTimeout(() => tone(880, .16, 'sine', .2), 110); },
+  clock: () => { tone(980, .08, 'square', .12); setTimeout(() => tone(980, .08, 'square', .12), 140); },
+  level: () => { [523,659,784,1047].forEach((f,i) => setTimeout(() => tone(f, .15, 'triangle', .18), i*90)); },
+  over: () => { [440,349,262,196].forEach((f,i) => setTimeout(() => tone(f, .3, 'sawtooth', .15), i*220)); },
+  miss: () => tone(220, .1, 'sine', .08, 160),
+};
+
+let state = 'menu'; // menu | play | over
+let score = 0, lives = 3, level = 1, combo = 0, comboTimer = 0, slowmo = 0;
+let best = +(localStorage.getItem('bintangBest') || 0);
+bestVal.textContent = best;
+
+const basket = { x: W/2, y: H - 60, w: 92, h: 54, speed: 7.5, vx: 0, squash: 0, face: 'happy', faceTimer: 0, blink: 0 };
+let items = [], particles = [], floaters = [], stars = [];
+for (let i = 0; i < 70; i++) stars.push({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.6+.4, s: Math.random()*.4+.1, tw: Math.random()*Math.PI*2 });
+
+const keys = {};
+addEventListener('keydown', e => { keys[e.key] = true; if (e.key === ' ' && state !== 'play') start(); });
+addEventListener('keyup', e => keys[e.key] = false);
+cvs.addEventListener('mousemove', e => { const r = cvs.getBoundingClientRect(); basket.x = (e.clientX - r.left) * (W / r.width); });
+cvs.addEventListener('touchmove', e => { e.preventDefault(); const r = cvs.getBoundingClientRect(); basket.x = (e.touches[0].clientX - r.left) * (W / r.width); }, { passive: false });
+cvs.addEventListener('touchstart', () => { if (state !== 'play') start(); });
+btn.onclick = start;
+
+// ===== PWA: service worker + tombol install =====
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+let deferredPrompt = null;
+const installBtn = document.getElementById('install');
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  installBtn.style.display = 'inline-block';
+});
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null; installBtn.style.display = 'none';
+});
+addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
+
+function start() {
+  audio(); // aktifkan suara dari interaksi pengguna
+  state = 'play'; score = 0; lives = 3; level = 1; combo = 0; slowmo = 0;
+  items = []; particles = []; floaters = [];
+  overlay.classList.add('hidden');
+}
+
+const TYPES = [
+  { t:'star',   w:70, c:'#ffd76a', pts:10 },
+  { t:'gem',    w:12, c:'#7ef7c8', pts:30 },
+  { t:'bomb',   w:16, c:null },
+  { t:'rock',   w:10, c:null },
+  { t:'clock',  w:8,  c:'#8be9fd' },
+  { t:'heart',  w:4,  c:'#c88bff' },
+];
+
+function spawn() {
+  const boost = 1 + level * 0.28;
+  let r = Math.random();
+  let type = 'star';
+  if (r < 0.10*boost) type = 'bomb';
+  else if (r < 0.16*boost) type = 'rock';
+  else if (r < 0.22) type = 'gem';
+  else if (r < 0.26) type = 'clock';
+  else if (r < 0.29) type = 'heart';
+  items.push({
+    x: 40 + Math.random() * (W - 80), y: -30,
+    vy: 1.6 + Math.random()*1.4 + level*0.35,
+    vx: (Math.random()-.5)*1.2,
+    rot: Math.random()*Math.PI*2, vr: (Math.random()-.5)*.1,
+    type, r: type==='bomb'?14:13
+  });
+}
+
+function burst(x, y, color, n = 16) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random()*Math.PI*2, sp = 1+Math.random()*4;
+    particles.push({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 1.5, life: 1, color, size: 2+Math.random()*3 });
+  }
+}
+function floatText(x, y, text, color) { floaters.push({ x, y, text, color, life: 1 }); }
+
+function catchItem(it) {
+  if (it.type === 'star') {
+    combo++; comboTimer = 90;
+    const mult = 1 + Math.min(combo, 20) * 0.1;
+    const pts = Math.round(10 * mult);
+    score += pts;
+    floatText(it.x, it.y-20, '+'+pts + (combo>2 ? ' x'+combo : ''), '#ffd76a');
+    burst(it.x, it.y, '#ffd76a', 20);
+    basket.squash = 1; basket.face = 'happy'; basket.faceTimer = 60;
+    SFX.star(combo);
+  } else if (it.type === 'gem') {
+    combo++; comboTimer = 90;
+    const mult = 1 + Math.min(combo, 20) * 0.1;
+    const pts = Math.round(30 * mult);
+    score += pts;
+    floatText(it.x, it.y-20, '+'+pts + (combo>2 ? ' x'+combo : ''), '#7ef7c8');
+    burst(it.x, it.y, '#7ef7c8', 20);
+    basket.squash = 1; basket.face = 'happy'; basket.faceTimer = 60;
+    SFX.gem();
+  } else if (it.type === 'heart') {
+    lives = Math.min(lives+1, 5); floatText(it.x, it.y-20, '❤ +1', '#c88bff'); burst(it.x, it.y, '#c88bff');
+    basket.face = 'happy'; basket.faceTimer = 80; SFX.heart();
+  } else if (it.type === 'clock') {
+    slowmo = 300; floatText(it.x, it.y-20, '⏱ SLOW!', '#8be9fd'); burst(it.x, it.y, '#8be9fd');
+    basket.face = 'happy'; basket.faceTimer = 80; SFX.clock();
+  } else {
+    lives--; combo = 0;
+    floatText(it.x, it.y-20, it.type==='bomb'?'💥 -1':'☠ -1', '#ff5a6e');
+    burst(it.x, it.y, '#ff5a6e', 26);
+    basket.squash = 1; basket.face = 'hurt'; basket.faceTimer = 70;
+    it.type === 'bomb' ? SFX.bomb() : SFX.rock();
+    if (lives <= 0) gameOver();
+  }
+}
+function missItem(it) {
+  if (it.type === 'star' || it.type === 'gem') {
+    combo = 0; burst(it.x, H-10, '#556', 6);
+    basket.face = 'sad'; basket.faceTimer = 50; SFX.miss();
+  }
+}
+function gameOver() {
+  state = 'over'; SFX.over();
+  if (score > best) { best = score; localStorage.setItem('bintangBest', best); }
+  bestVal.textContent = best;
+  document.querySelector('#overlay h1').textContent = '💥 GAME OVER';
+  document.querySelector('#overlay p').innerHTML = `Skor kamu: <b style="color:#ffd76a;font-size:24px">${score}</b><br>Level: ${level} — Coba pecahkan rekor!`;
+  btn.textContent = 'MAIN LAGI';
+  overlay.classList.remove('hidden');
+}
+
+function drawBasket() {
+  ctx.save();
+  // animasi: memantul (squash) saat menangkap/kena, bergoyang saat bergerak
+  basket.squash = Math.max(0, basket.squash - .08);
+  const sq = basket.squash;
+  const tilt = Math.max(-.18, Math.min(.18, basket.vx * .022));
+  ctx.translate(basket.x, basket.y + sq*6);
+  ctx.rotate(tilt);
+  ctx.scale(1 + sq*.12, 1 - sq*.14);
+  // glow
+  ctx.shadowColor = '#7ecbff'; ctx.shadowBlur = 18;
+  // body
+  const h2 = basket.h/2;
+  const g = ctx.createLinearGradient(0,-h2,0,h2);
+  g.addColorStop(0,'#9fd8ff'); g.addColorStop(1,'#3b7bd8');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-basket.w/2, -basket.h/2);
+  ctx.lineTo(basket.w/2, -basket.h/2);
+  ctx.quadraticCurveTo(basket.w/2-8, basket.h/2, basket.w/2-20, basket.h/2);
+  ctx.lineTo(-basket.w/2+20, basket.h/2);
+  ctx.quadraticCurveTo(-basket.w/2+8, basket.h/2, -basket.w/2, -basket.h/2);
+  ctx.fill(); ctx.shadowBlur = 0;
+  // rim
+  ctx.fillStyle = '#eaf4ff';
+  ctx.beginPath(); ctx.roundRect(-basket.w/2-5, -basket.h/2-7, basket.w+10, 12, 6); ctx.fill();
+  // stripes
+  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-basket.w/4,-basket.h/2+10); ctx.lineTo(-basket.w/4+8,basket.h/2-4);
+  ctx.moveTo(basket.w/4,-basket.h/2+10); ctx.lineTo(basket.w/4+8,basket.h/2-4); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // ===== WAJAH KARAKTER di badan keranjang =====
+  // ronto: mata mengikuti item terdekat di atas
+  let tx = 0, ty = -1;
+  let nearest = null, nd = 1e9;
+  for (const it of items) {
+    const d = Math.hypot(it.x-basket.x, it.y-basket.y);
+    if (d < nd) { nd = d; nearest = it; }
+  }
+  if (nearest) { tx = Math.max(-1, Math.min(1, (nearest.x-basket.x)/220)); ty = Math.max(-1, Math.min(1, (nearest.y-basket.y)/220)); }
+  const ey = -basket.h/2 + 26, ex = 11;
+  basket.blink -= 1; if (basket.blink < -160) basket.blink = 8; // kedip sesekali
+  const blinking = basket.blink > 0;
+  const fc = { happy:'#123047', hurt:'#7a1020', sad:'#123047' }[basket.face] || '#123047';
+  // mata (dua)
+  for (const side of [-1, 1]) {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(side*ex, ey, 8, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.15)'; ctx.lineWidth = 1; ctx.stroke();
+    if (blinking) {
+      ctx.strokeStyle = fc; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(side*ex-6, ey); ctx.lineTo(side*ex+6, ey); ctx.stroke();
+    } else {
+      ctx.fillStyle = fc;
+      ctx.beginPath(); ctx.arc(side*ex + tx*3.5, ey + ty*3.5, 3.8, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.9)';
+      ctx.beginPath(); ctx.arc(side*ex + tx*3.5 - 1.2, ey + ty*3.5 - 1.2, 1.3, 0, 7); ctx.fill();
+    }
+    // alis saat hurt/sad
+    if (basket.face === 'hurt' || basket.face === 'sad') {
+      ctx.strokeStyle = fc; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(side*ex-6, ey-13 + side*3); ctx.lineTo(side*ex+6, ey-13 - side*3);
+      ctx.stroke();
+    }
+  }
+  // mulut sesuai ekspresi
+  ctx.strokeStyle = fc; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.beginPath();
+  if (basket.face === 'happy') {
+    ctx.arc(0, ey+16, 9, .15*Math.PI, .85*Math.PI); // senyum lebar
+  } else if (basket.face === 'sad') {
+    ctx.arc(0, ey+26, 9, 1.15*Math.PI, 1.85*Math.PI); // sedih
+  } else {
+    ctx.arc(0, ey+20, 5, 0, 7); // 'o' kaget/meringis
+  }
+  ctx.stroke();
+  // keringat saat hurt
+  if (basket.face === 'hurt') {
+    ctx.fillStyle = '#8be9fd';
+    ctx.beginPath(); ctx.ellipse(basket.w/2-6, -basket.h/2, 3.5, 5.5, 0, 0, 7); ctx.fill();
+  }
+  basket.faceTimer -= 1;
+  if (basket.faceTimer <= 0) basket.face = 'happy';
+  ctx.restore();
+}
+
+function drawItem(it) {
+  ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot);
+  if (it.type === 'star') {
+    ctx.shadowColor = '#ffd76a'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ffd76a'; ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const rr = i%2 ? 6 : 13, a = Math.PI/5*i - Math.PI/2;
+      i ? ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr) : ctx.moveTo(Math.cos(a)*rr, Math.sin(a)*rr);
+    }
+    ctx.closePath(); ctx.fill();
+  } else if (it.type === 'gem') {
+    ctx.shadowColor = '#7ef7c8'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#7ef7c8';
+    ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(11,-3); ctx.lineTo(0,14); ctx.lineTo(-11,-3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(11,-3); ctx.lineTo(0,-3); ctx.closePath(); ctx.fill();
+  } else if (it.type === 'bomb') {
+    ctx.shadowColor = '#ff5a6e'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#2a2a3a'; ctx.beginPath(); ctx.arc(0,2,12,0,7); ctx.fill();
+    ctx.shadowBlur = 0; ctx.strokeStyle = '#ffb84a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(4,-8); ctx.quadraticCurveTo(10,-16,14,-12); ctx.stroke();
+    ctx.fillStyle = '#ffde59'; ctx.beginPath(); ctx.arc(15,-12,3,0,7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(-4,-2,4,0,7); ctx.fill();
+  } else if (it.type === 'rock') {
+    ctx.fillStyle = '#8d7b6a'; ctx.beginPath();
+    ctx.moveTo(-12,4); ctx.lineTo(-7,-10); ctx.lineTo(6,-12); ctx.lineTo(12,-2); ctx.lineTo(7,10); ctx.lineTo(-5,11);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.arc(2,1,4,0,7); ctx.fill();
+  } else if (it.type === 'clock') {
+    ctx.shadowColor = '#8be9fd'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#8be9fd'; ctx.beginPath(); ctx.arc(0,0,12,0,7); ctx.fill();
+    ctx.shadowBlur = 0; ctx.strokeStyle = '#123'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-7); ctx.moveTo(0,0); ctx.lineTo(5,2); ctx.stroke();
+  } else if (it.type === 'heart') {
+    ctx.shadowColor = '#c88bff'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#c88bff'; ctx.beginPath();
+    ctx.moveTo(0,6); ctx.bezierCurveTo(-14,-6,-8,-14,0,-6); ctx.bezierCurveTo(8,-14,14,-6,0,6);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+let t = 0, spawnTimer = 0;
+function loop() {
+  requestAnimationFrame(loop);
+  t += 0.016;
+  const timeScale = slowmo > 0 ? 0.45 : 1;
+  if (slowmo > 0) slowmo--;
+
+  // background
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#0b0f2a'); sky.addColorStop(.6,'#1b2350'); sky.addColorStop(1,'#2a2f6b');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+  for (const s of stars) {
+    s.tw += .05;
+    ctx.globalAlpha = .4 + Math.sin(s.tw)*.35;
+    ctx.fillStyle = '#dfe8ff';
+    ctx.beginPath(); ctx.arc(s.x, (s.y + t*10*s.s) % H, s.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  if (state === 'play') {
+    // controls
+    const oldX = basket.x;
+    if (keys['ArrowLeft'] || keys['a']) basket.x -= basket.speed;
+    if (keys['ArrowRight'] || keys['d']) basket.x += basket.speed;
+    basket.x = Math.max(basket.w/2, Math.min(W - basket.w/2, basket.x));
+    basket.vx = basket.x - oldX; // kecepatan untuk animasi karakter
+
+    // level up every 150 pts
+    const newLevel = 1 + Math.floor(score / 150);
+    if (newLevel > level) {
+      level = newLevel;
+      floatText(W/2, H/2 - 60, 'LEVEL ' + level + '!', '#ff9a5a');
+      SFX.level();
+    }
+
+    // spawn
+    spawnTimer -= timeScale;
+    if (spawnTimer <= 0) { spawn(); spawnTimer = Math.max(18, 55 - level*4) + Math.random()*15; }
+
+    // items
+    for (let i = items.length-1; i >= 0; i--) {
+      const it = items[i];
+      it.y += it.vy * timeScale; it.x += it.vx * timeScale; it.rot += it.vr * timeScale;
+      if (it.x < 15 || it.x > W-15) it.vx *= -1;
+      // catch check
+      if (it.y > basket.y - basket.h/2 - 10 && it.y < basket.y + basket.h/2 &&
+          Math.abs(it.x - basket.x) < basket.w/2 + 6) {
+        catchItem(it); items.splice(i,1); continue;
+      }
+      if (it.y > H + 30) { missItem(it); items.splice(i,1); }
+    }
+
+    if (comboTimer > 0) { comboTimer -= timeScale; if (comboTimer <= 0) combo = 0; }
+  }
+
+  // particles
+  for (let i = particles.length-1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += .12; p.life -= .025;
+    if (p.life <= 0) { particles.splice(i,1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size*p.life, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // floaters
+  for (let i = floaters.length-1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 1; f.life -= .018;
+    if (f.life <= 0) { floaters.splice(i,1); continue; }
+    ctx.globalAlpha = f.life;
+    ctx.font = 'bold 20px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+
+  if (state !== 'menu') drawBasket();
+
+  // HUD
+  if (state !== 'menu') {
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 6;
+    ctx.fillText('⭐ ' + score, 16, 36);
+    ctx.font = '20px Segoe UI'; ctx.fillStyle = '#9fb0ff';
+    ctx.fillText('Lv ' + level, 16, 62);
+    if (combo > 2) {
+      ctx.font = 'bold 18px Segoe UI'; ctx.fillStyle = '#ffd76a';
+      ctx.fillText('COMBO x' + combo, 16, 88);
+    }
+    // lives
+    let hx = W - 24;
+    for (let i = 0; i < Math.max(lives,0); i++) {
+      ctx.fillStyle = '#ff5a6e'; ctx.shadowColor = '#ff5a6e'; ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(hx, 26); ctx.bezierCurveTo(hx-11,16,hx-7,8,hx,15); ctx.bezierCurveTo(hx+7,8,hx+11,16,hx,26);
+      ctx.fill(); hx -= 24;
+    }
+    ctx.shadowBlur = 0;
+    if (slowmo > 0) {
+      ctx.font = 'bold 15px Segoe UI'; ctx.fillStyle = '#8be9fd'; ctx.textAlign = 'center';
+      ctx.fillText('⏱ SLOW-MO', W/2, 34);
+    }
+  }
+}
+if (!ctx.roundRect) ctx.roundRect = function(x,y,w,h,r){ this.rect(x,y,w,h); };
+loop();
+</script>
+</body>
+</html>
