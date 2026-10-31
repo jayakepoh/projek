@@ -30,6 +30,9 @@
     text-shadow:0 0 30px rgba(255,200,100,.25); margin-bottom:8px;
   }
   #overlay p { color:#cfd8ff; font-size:16px; max-width:320px; line-height:1.5; }
+  .difficulty { display:flex; gap:4px; margin-top:18px; padding:4px; border:1px solid rgba(207,216,255,.25); border-radius:8px; }
+  .difficulty button { padding:8px 18px; color:#cfd8ff; background:transparent; border:0; border-radius:4px; font-size:14px; cursor:pointer; }
+  .difficulty button.selected { color:#1b2350; background:#cfd8ff; font-weight:700; }
   #btn {
     margin-top:24px; padding:14px 42px; font-size:20px; font-weight:700; color:#1b2350;
     background:linear-gradient(90deg,#ffd76a,#ff9a5a); border:none; border-radius:40px;
@@ -52,6 +55,10 @@
   <div id="overlay">
     <h1>⭐ BINTANG JATUH</h1>
     <p>Gerakkan keranjang untuk menangkap bintang! Hati-hati dengan bom 💣 dan asteroid ☄️</p>
+    <div class="difficulty" role="group" aria-label="Pilih tingkat kesulitan">
+      <button class="difficulty-btn selected" type="button" data-easy="false" aria-pressed="true">Normal</button>
+      <button class="difficulty-btn" type="button" data-easy="true" aria-pressed="false">Mudah</button>
+    </div>
     <button id="btn">MULAI</button>
     <div id="best">Skor terbaik: <span id="bestVal">0</span></div>
   <button id="install">📲 Pasang sebagai Aplikasi</button>
@@ -73,6 +80,18 @@ cvs.style.width = Math.min(W, window.innerWidth - 20) + 'px';
 const overlay = document.getElementById('overlay');
 const btn = document.getElementById('btn');
 const bestVal = document.getElementById('bestVal');
+const difficultyButtons = [...document.querySelectorAll('.difficulty-btn')];
+let easyMode = false;
+for (const button of difficultyButtons) {
+  button.addEventListener('click', () => {
+    easyMode = button.dataset.easy === 'true';
+    for (const option of difficultyButtons) {
+      const selected = option === button;
+      option.classList.toggle('selected', selected);
+      option.setAttribute('aria-pressed', String(selected));
+    }
+  });
+}
 
 // ============ EFEK SUARA (Web Audio, tanpa file) ============
 let actx = null;
@@ -142,7 +161,7 @@ addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
 
 function start() {
   audio(); // aktifkan suara dari interaksi pengguna
-  state = 'play'; score = 0; lives = 3; level = 1; combo = 0; slowmo = 0;
+  state = 'play'; score = 0; lives = easyMode ? 5 : 3; level = 1; combo = 0; slowmo = 0;
   items = []; particles = []; floaters = [];
   overlay.classList.add('hidden');
 }
@@ -158,16 +177,17 @@ const TYPES = [
 
 function spawn() {
   const boost = 1 + level * 0.28;
+  const hazardScale = easyMode ? 0.55 : 1;
   let r = Math.random();
   let type = 'star';
-  if (r < 0.10*boost) type = 'bomb';
-  else if (r < 0.16*boost) type = 'rock';
+  if (r < 0.10*boost*hazardScale) type = 'bomb';
+  else if (r < 0.16*boost*hazardScale) type = 'rock';
   else if (r < 0.22) type = 'gem';
   else if (r < 0.26) type = 'clock';
   else if (r < 0.29) type = 'heart';
   items.push({
     x: 40 + Math.random() * (W - 80), y: -30,
-    vy: 1.6 + Math.random()*1.4 + level*0.35,
+    vy: (1.6 + Math.random()*1.4 + level*0.35) * (easyMode ? 0.72 : 1),
     vx: (Math.random()-.5)*1.2,
     rot: Math.random()*Math.PI*2, vr: (Math.random()-.5)*.1,
     type, r: type==='bomb'?14:13
@@ -399,7 +419,7 @@ function loop() {
 
     // spawn
     spawnTimer -= timeScale;
-    if (spawnTimer <= 0) { spawn(); spawnTimer = Math.max(18, 55 - level*4) + Math.random()*15; }
+    if (spawnTimer <= 0) { spawn(); spawnTimer = (Math.max(18, 55 - level*4) + Math.random()*15) * (easyMode ? 1.35 : 1); }
 
     // items
     for (let i = items.length-1; i >= 0; i--) {
